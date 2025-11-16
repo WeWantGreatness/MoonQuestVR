@@ -87,15 +87,26 @@ public class PluginManager {
             LimeLog.severe("Duplicated " + pluginType + " found,Stoped");
             return;
         }
-        LimeLog.debug("Plugin " + pluginType + ":Activating");
+        LimeLog.info("PluginManager.ActivatePlugin: Activating " + pluginType);
         if (pluginType == PluginType.PC) {
             m_PluginMap.put(pluginType, new PcPlugin(this, mActivity));
+            LimeLog.info("PluginManager.ActivatePlugin: PC plugin created");
         } else if (pluginType == PluginType.APP) {
             m_PluginMap.put(pluginType, new AppPlugin(this, mActivity, i));
+            LimeLog.info("PluginManager.ActivatePlugin: App plugin created");
         } else if (pluginType == PluginType.STREAM) {
             m_PluginMap.put(pluginType, new StreamPlugin(this, mActivity, i));
+            LimeLog.info("PluginManager.ActivatePlugin: Stream plugin created");
+            // Also notify the plugin manager via the UI callback that the stream UI is ready
+            try {
+                // This message is already sent by StreamPlugin constructor but add an explicit message here so the Unity side can rely on it
+                Callback("UISTM");
+            } catch (Exception e) {
+                LimeLog.warning("PluginManager.ActivatePlugin: failed to send UISTM callback: " + e.toString());
+            }
         } else if (pluginType == PluginType.SHORTCUT) {
             m_PluginMap.put(pluginType, new ShortcutPlugin(this, mActivity, i));
+            LimeLog.info("PluginManager.ActivatePlugin: Shortcut plugin created");
         }
     }
 
@@ -123,6 +134,7 @@ public class PluginManager {
     }
 
     public UnityPluginObject GetPlugin(PluginType t) {
+        LimeLog.info("PluginManager.GetPlugin: queried pluginType=" + t + " exists=" + (m_PluginMap.get(t) != null));
         return m_PluginMap.get(t);
     }
 

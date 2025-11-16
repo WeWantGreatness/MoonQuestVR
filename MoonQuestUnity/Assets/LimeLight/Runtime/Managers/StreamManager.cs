@@ -22,6 +22,7 @@ namespace PCP.LibLime
 
 		protected override void OnCreate()
 		{
+			Debug.Log(mTag + ": OnCreate called");
 			GetResolution();
 			Debug.Log(mTag + ":Resolution " + mTexWidth + "x" + mTexHeight);
 			mRawObject = mPlugin.GetRawObject();
@@ -54,6 +55,7 @@ namespace PCP.LibLime
 		{
 			if (!IsInitialized)
 				return;
+			Debug.Log(mTag + ": UpdateFrame called");
 			if (SystemInfo.renderingThreadingMode == UnityEngine.Rendering.RenderingThreadingMode.MultiThreaded)
 			{
 				GL.IssuePluginEvent(JNIUtil.UpdateSurfaceFunc(), (int)mRawObject);
@@ -68,6 +70,7 @@ namespace PCP.LibLime
 			if ((newPtr != IntPtr.Zero) && (newPtr != oldPtr))
 			{
 				((Texture2D)mRawImage.texture).UpdateExternalTexture(newPtr);
+				Debug.Log(mTag + ": Texture updated");
 			}
 		}
 		private void Update()

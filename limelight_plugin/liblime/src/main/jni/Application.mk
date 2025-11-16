@@ -2,3 +2,4 @@
 
 # Our minimum version is Android 5.0
 APP_PLATFORM := android-21
+APP_STL := c++_shared

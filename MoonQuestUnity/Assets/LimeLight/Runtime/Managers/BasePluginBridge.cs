@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace PCP.LibLime
 {
@@ -39,7 +40,8 @@ namespace PCP.LibLime
 				Debug.LogError(mTag + "already Started");
 				return;
 			}
-			Debug.Log(mTag + " Initailizing");
+			Debug.Log("LIME: " + mTag + " Initailizing");
+			Debug.Log("LIME: " + mTag + " Init: Plugin object = " + (o != null ? "present" : "null"));
 			//TODO: maybe move this to Awake
 			mPluginManager = m;
 			Blocker = mPluginManager.Blocker;
@@ -72,8 +74,25 @@ namespace PCP.LibLime
 				yield return new WaitForEndOfFrame();
 			}
 			OnCreate();
+			Debug.Log("LIME: " + mTag + " Init: OnCreate completed");
 			if (mPanel != null)
+			{
+				Debug.Log(mTag + ": Activating panel " + mPanel.name);
 				mPanel.SetActive(true);
+				Canvas canvas = mPanel.GetComponentInChildren<Canvas>();
+				if (canvas != null)
+				{
+					Debug.Log(mTag + ": Setting canvas to WorldSpace for panel " + mPanel.name);
+					canvas.renderMode = RenderMode.WorldSpace;
+					Camera cam = Camera.main;
+					if (cam != null)
+					{
+						Debug.Log(mTag + ": Repositioning panel in front of camera");
+						canvas.transform.position = cam.transform.position + cam.transform.forward * 2f;
+						canvas.transform.rotation = cam.transform.rotation;
+					}
+				}
+			}
 			Blocker.SetActive(false);
 			State = PluginState.INITIALIZED;
 			Debug.Log(mTag + "Initialized");

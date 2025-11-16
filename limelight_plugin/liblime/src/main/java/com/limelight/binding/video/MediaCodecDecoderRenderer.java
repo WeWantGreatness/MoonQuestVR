@@ -108,6 +108,7 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
     private VideoStats activeWindowVideoStats;
     private VideoStats lastWindowVideoStats;
     private VideoStats globalVideoStats;
+    private boolean firstFrameRendered = false;
 
     private long lastTimestampUs;
     private int lastFrameNumber;
@@ -291,6 +292,7 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
                                      CrashListener crashListener, int consecutiveCrashCount,
                                      boolean meteredData, boolean requestedHdr,
                                      String glRenderer, PerfOverlayListener perfListener) {
+        LimeLog.info("MediaCodecDecoderRenderer: constructor - requestedHdr=" + requestedHdr + ", meteredData=" + meteredData);
         //dumpDecoders();
 
         this.context = activity;
@@ -676,6 +678,10 @@ public class MediaCodecDecoderRenderer extends VideoDecoderRenderer implements C
                         if (USE_FRAME_RENDER_TIME) {
                             activeWindowVideoStats.totalTimeMs += delta;
                         }
+                    if (!firstFrameRendered) {
+                        LimeLog.info("MediaCodecDecoderRenderer: first frame rendered delta=" + delta + "ms");
+                        firstFrameRendered = true;
+                    }
                     }
                 }
             }, null);

@@ -19,6 +19,7 @@ namespace PCP.LibLime
 		}
 		public void OnClick()
 		{
+			Debug.Log("LIME: NvAppListItemHodler: OnClick for " + gameObject.name + " id=" + mData.appId);
 			if (mManager == null)
 			{
 				Debug.LogError("ItemOnClick :AppManager Not Found");

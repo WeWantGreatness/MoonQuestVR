@@ -351,6 +351,7 @@ public class AppPlugin extends UnityPluginObject {
 
     //Bridge
     public String GetList(boolean add) {
+        LimeLog.info("AppPlugin.GetList: returning app list length=" + (m_AppList==null?0:m_AppList.getUpdatedList().length()));
         return m_AppList.getUpdatedList();
     }
 
@@ -361,8 +362,35 @@ public class AppPlugin extends UnityPluginObject {
 
     private void StartApp(int id) {
         final AppObject app = (AppObject) m_AppList.getItemByID(id);
+
+        if (app == null) {
+            LimeLog.warning("StartApp: requested app not found for id: " + id);
+            // Inform Unity that we failed to start the app so it can display an error
+            try {
+                mPluginManager.Callback("startapp_failed_app_null:" + id);
+            } catch (Exception e) {
+                LimeLog.warning("StartApp: error while sending callback for null-app: " + e.toString());
+            }
+            return;
+        }
+
         LimeLog.info("Starting app: " + app.app.getAppName());
-        ServerHelper.doStart(mPluginManager, app.app, computer, managerBinder);
+
+        try {
+            ServerHelper.doStart(mPluginManager, app.app, computer, managerBinder);
+        } catch (Throwable t) {
+            // Surface any exception into plugin logs + Unity callback to avoid uncaught crashes
+            LimeLog.severe("StartApp: exception while starting app id=" + id + " -> " + t.toString());
+            t.printStackTrace();
+            try {
+                mPluginManager.Callback("startapp_failed_exception:" + t.getClass().getSimpleName() + "|" + t.getMessage());
+            } catch (Exception e) {
+                LimeLog.warning("StartApp: error while sending exception callback: " + e.toString());
+            }
+            return;
+        }
+
+        // We only finish on a successful start to allow the plugin to report errors cleanly
         finish();
     }
 

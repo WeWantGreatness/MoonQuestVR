@@ -37,17 +37,20 @@ namespace PCP.LibLime
 			mPcManager = GetComponent<PcManager>();
 			mAppManger = GetComponent<AppManager>();
 			OnJavaCallback += ChangeUIHandler;
+			Debug.Log(mTag + ": Initialized");
 		}
 
 		private void Start()
 		{
 			CreatePluginObject();
+			StartPc();
 		}
 		private void CreatePluginObject()
 		{
 			mPluginManager = new AndroidJavaObject("com.liblime.PluginManager");
 			mPluginManager.Call("Init");
 			Blocking = false;
+			Debug.Log(mTag + ": Plugin created, Blocking = " + Blocking);
 		}
 
 		private void OnApplicationPause(bool pause)
@@ -172,7 +175,7 @@ namespace PCP.LibLime
 			{
 				if (timer > laodingTimeout)
 				{
-					Debug.LogError(t.ToString() + "Loading Timeout:Cannot get plugin");
+					Debug.LogError("LIME: Loading Timeout:Cannot get plugin for " + t);
 					yield break;
 				}
 				Debug.Log("Foudning plugin:" + t + "Time:" + timer);

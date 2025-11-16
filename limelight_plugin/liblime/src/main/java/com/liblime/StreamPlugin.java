@@ -85,6 +85,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
 
         isInitialized = true;
         LimeLog.debug("StreamPlugin initialized");
+        LimeLog.info("StreamPlugin: sending UISTM callback to Unity");
         mPluginManager.Callback("UISTM");
     }
 
@@ -94,6 +95,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
     //TODO extract this to methods for better management
     @Override
     protected void onCreate() {
+        LimeLog.info("StreamPlugin.onCreate: started");
 
         // Read the stream preferences
         prefConfig = PreferenceConfiguration.readPreferences(mActivity);
@@ -126,6 +128,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
 
         appName = getIntent().getStringExtra(EXTRA_APP_NAME);
         pcName = getIntent().getStringExtra(EXTRA_PC_NAME);
+        LimeLog.info("StreamPlugin.onCreate: appName=" + appName + ", pcName=" + pcName);
 
         String host = getIntent().getStringExtra(EXTRA_HOST);
         int port = getIntent().getIntExtra(EXTRA_PORT, NvHTTP.DEFAULT_HTTP_PORT);
@@ -136,6 +139,8 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
         byte[] derCertData = getIntent().getByteArrayExtra(EXTRA_SERVER_CERT);
 
         app = new NvApp(appName != null ? appName : "app", appId, appSupportsHdr);
+
+        LimeLog.info("StreamPlugin.onCreate: building StreamConfiguration - appId=" + appId + ", host=" + host + ", port=" + port + ", httpsPort=" + httpsPort);
 
         X509Certificate serverCert = null;
         try {
@@ -155,6 +160,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
         // Initialize the MediaCodec helper before creating the decoder
         GlPreferences glPrefs = GlPreferences.readPreferences(mActivity);
         MediaCodecHelper.initialize(mActivity, glPrefs.glRenderer);
+        LimeLog.info("StreamPlugin.onCreate: MediaCodecHelper initialized (glRenderer=" + glPrefs.glRenderer + ")");
 
         // Check if the user has enabled HDR
         boolean willStreamHdr = false;
@@ -183,6 +189,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
                 willStreamHdr,
                 glPrefs.glRenderer,
                 this);
+            LimeLog.info("StreamPlugin.onCreate: MediaCodecDecoderRenderer created");
 
         // Don't stream HDR if the decoder can't support it
         if (willStreamHdr && !decoderRenderer.isHevcMain10Hdr10Supported() && !decoderRenderer.isAv1Main10Supported()) {
@@ -265,6 +272,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
 
         if (!decoderRenderer.isAvcSupported()) {
             // If we can't find an AVC decoder, we can't proceed
+            LimeLog.severe("StreamPlugin.onCreate: AVC not supported - failing to start stream");
             LimeLog.todo("This device or ROM doesn't support hardware accelerated H.264 playback.");
             return;
         }
@@ -288,11 +296,13 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
             public void run() {
                 LimeLog.temp("Adding StreamView to layout");
                 mActivity.addContentView(streamView, new RelativeLayout.LayoutParams(mTexWidth, mTextHeight));
+                LimeLog.info("StreamPlugin.onCreate: StreamView added to layout (size: " + mTexWidth + "x" + mTextHeight + ")");
             }
         });
 
         // The connection will be started when the surface gets created
         streamView.getHolder().addCallback(this);
+        LimeLog.info("StreamPlugin.onCreate: StreamView holder callback added");
     }
 
     private boolean mayReduceRefreshRate() {
@@ -435,7 +445,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
 
                 if (!displayedFailureDialog) {
                     displayedFailureDialog = true;
-                    LimeLog.severe("Connection terminated: " + errorCode);
+                    LimeLog.severe("StreamPlugin.connectionTerminated: Connection terminated: " + errorCode);
                     stopConnection();
 
                     // Display the error dialog if it was an unexpected termination.
@@ -528,6 +538,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
 
                 connected = true;
                 connecting = false;
+                LimeLog.info("StreamPlugin.connectionStarted: connected=true");
 
                 // Update GameManager state to indicate we're in game
 //                UiHelper.notifyStreamConnected(Game.this);
@@ -559,8 +570,12 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
 //            UiHelper.notifyStreamConnecting(Game.this);
 
             decoderRenderer.setRenderTarget(streamView);
+            	LimeLog.info("StreamPlugin.surfaceChanged: starting NvConnection for app=" + appName + " pc=" + pcName);
+            	decoderRenderer.setRenderTarget(streamView);
+            	LimeLog.info("StreamPlugin.surfaceChanged: decoderRenderer.setRenderTarget completed");
             conn.start(new AndroidAudioRenderer(mActivity, prefConfig.enableAudioFx),
                     decoderRenderer, StreamPlugin.this);
+            	LimeLog.info("StreamPlugin.surfaceChanged: conn.start() invoked");
         }
     }
 
@@ -584,6 +599,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
             desiredFrameRate = desiredRefreshRate;
         }
 
+        LimeLog.info("StreamPlugin.surfaceCreated: surface created - desiredFrameRate=" + desiredFrameRate + ", will attempt connection if not already attempted");
         // Tell the OS about our frame rate to allow it to adapt the display refresh rate appropriately
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // We want to change frame rate even if it's not seamless, since prepareDisplayForRendering()
@@ -684,7 +700,9 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
     }
 
     public int getTexturePtr() {
-        return mHWBFboTextureId == null ? 0 : mHWBFboTextureId[0];
+        int val = mHWBFboTextureId == null ? 0 : mHWBFboTextureId[0];
+        LimeLog.info("StreamPlugin.getTexturePtr: returning texture ptr=" + val);
+        return val;
     }
 
     public void releaseSharedTexture() {
@@ -706,7 +724,10 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
 
     public void updateSharedTexture() {
         HardwareBuffer sb = mRenderer.getHardwareBuffer();
+        LimeLog.info("StreamPlugin.updateSharedTexture: getHardwareBuffer -> " + (sb==null?"null":"valid"));
         if (sb == null || mShareBuffer == sb) {
+            if (sb == null)
+                LimeLog.info("StreamPlugin.updateSharedTexture: no hardware buffer - skipping");
             return;
         }
 
@@ -728,6 +749,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
         sharedTexture.bindTexture(mHWBFboTextureId[0]);
         mSharedTexture = sharedTexture;
         mShareBuffer = sb;
+        LimeLog.info("StreamPlugin.updateSharedTexture: created texture id=" + mHWBFboTextureId[0]);
     }
 
     //Shortcut

@@ -218,6 +218,7 @@ public class NvConnection {
 
     private boolean startApp() throws XmlPullParserException, IOException
     {
+        LimeLog.info("NvConnection.startApp: starting - host=" + context.serverAddress.address + ", port=" + context.serverAddress.port + ", appName=" + context.streamConfig.getApp().getAppName());
         NvHTTP h = new NvHTTP(context.serverAddress, context.httpsPort, uniqueId, context.serverCert, cryptoProvider);
 
         String serverInfo = h.getServerInfo(true);
@@ -225,6 +226,7 @@ public class NvConnection {
         context.serverAppVersion = h.getServerVersion(serverInfo);
         if (context.serverAppVersion == null) {
             context.connListener.displayMessage("Server version malformed");
+            LimeLog.severe("NvConnection.startApp: server version malformed for host=" + context.serverAddress.address);
             return false;
         }
 
@@ -236,6 +238,7 @@ public class NvConnection {
 
         if (h.getPairState(serverInfo) != PairingManager.PairState.PAIRED) {
             context.connListener.displayMessage("Device not paired with computer");
+            LimeLog.severe("NvConnection.startApp: not paired with computer for host=" + context.serverAddress.address);
             return false;
         }
 
@@ -255,6 +258,7 @@ public class NvConnection {
         if ((context.streamConfig.getWidth() > 4096 || context.streamConfig.getHeight() > 4096) &&
                 (h.getServerCodecModeSupport(serverInfo) & 0x200) == 0 && context.isNvidiaServerSoftware) {
             context.connListener.displayMessage("Your host PC does not support streaming at resolutions above 4K.");
+            LimeLog.severe("NvConnection.startApp: Server does not support >4K on nvidia server");
             return false;
         }
         else if ((context.streamConfig.getWidth() > 4096 || context.streamConfig.getHeight() > 4096) &&
@@ -269,6 +273,7 @@ public class NvConnection {
             // Lower resolution to 1080p
             context.negotiatedWidth = 1920;
             context.negotiatedHeight = 1080;
+            LimeLog.info("NvConnection.startApp: Downgraded resolution to 1920x1080 due to server 4K limitation");
         }
         else {
             // Take what the client wanted
@@ -380,6 +385,7 @@ public class NvConnection {
     {
         new Thread(new Runnable() {
             public void run() {
+                LimeLog.info("NvConnection.start: connection thread started for app " + context.streamConfig.getApp().getAppName());
                 context.connListener = connectionListener;
                 context.videoCapabilities = videoDecoderRenderer.getCapabilities();
 
@@ -389,9 +395,11 @@ public class NvConnection {
 
                 try {
                     if (!startApp()) {
+                        LimeLog.severe("NvConnection.start: startApp() returned false - failed to start app");
                         context.connListener.stageFailed(appName, 0, 0);
                         return;
                     }
+                    LimeLog.info("NvConnection.start: startApp() succeeded");
                     context.connListener.stageComplete(appName);
                 } catch (HostHttpResponseException e) {
                     e.printStackTrace();
@@ -442,6 +450,7 @@ public class NvConnection {
                         connectionAllowed.release();
                         return;
                     }
+                    LimeLog.info("NvConnection.start: MoonBridge.startConnection returned success (ret=0)");
                 }
             }
         }).start();

@@ -69,6 +69,8 @@ public class ServerHelper {
         } catch (CertificateEncodingException e) {
             e.printStackTrace();
         }
+        LimeLog.info("createStartIntent: host=" + computer.activeAddress.address + ", port=" +
+            computer.activeAddress.port + ", appName=" + app.getAppName() + ", appId=" + app.getAppId());
         return intent;
     }
 
@@ -78,6 +80,7 @@ public class ServerHelper {
             LimeLog.todo("Attempted to start app on offline computer");
             return;
         }
+        LimeLog.info("ServerHelper.doStart: Activating Stream plugin for app=" + app.getAppName() + " id=" + app.getAppId());
         parent.ActivatePlugin(PluginManager.PluginType.STREAM, createStartIntent(parent.GetActivity(), app, computer, managerBinder));
     }
 
