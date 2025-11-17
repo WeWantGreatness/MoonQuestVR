@@ -21,7 +21,7 @@ jobs:
           java-version: '11'
 
       - name: Set up Android SDK and NDK
-        uses: r0adkll/setup-android@v2
+        uses: android-actions/setup-android@v3
         with:
           api-level: 32
           ndk: 26.2.11394342
