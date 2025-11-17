@@ -18,13 +18,15 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '11'
+          java-version: '17'
 
       - name: Set up Android SDK and NDK
         uses: android-actions/setup-android@v3
         with:
-          api-level: 32
-          ndk: 26.2.11394342
+          packages: |
+            platforms;android-32
+            ndk;26.2.11394342
+          accept-android-sdk-licenses: true
 
       - name: Build liblime AAR
         working-directory: limelight_plugin
