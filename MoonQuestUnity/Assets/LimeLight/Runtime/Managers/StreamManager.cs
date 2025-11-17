@@ -5,7 +5,7 @@ namespace PCP.LibLime
 {
 	public class StreamManager : BasePluginBridge
 	{
-		[SerializeField] private RawImage mRawImage;
+		[SerializeField] private MeshRenderer mQuadRenderer; // For 3D stream display
 		private Texture mPausingTex;
 		private Vector2 mPausingSize;
 		private int mTexWidth;
@@ -16,8 +16,10 @@ namespace PCP.LibLime
 		{
 			Type = LimePluginManager.PluginType.Stream;
 			mTag = "StreamManager";
-			mPausingTex = mRawImage.texture;
-			mPausingSize = mRawImage.rectTransform.sizeDelta;
+			if (mQuadRenderer != null)
+			{
+				mPausingTex = mQuadRenderer.material.mainTexture;
+			}
 		}
 
 		protected override void OnCreate()
@@ -26,18 +28,25 @@ namespace PCP.LibLime
 			GetResolution();
 			Debug.Log(mTag + ":Resolution " + mTexWidth + "x" + mTexHeight);
 			mRawObject = mPlugin.GetRawObject();
-			mRawImage.rectTransform.sizeDelta = new Vector2(mTexWidth, mTexHeight);
-			mRawImage.texture = new Texture2D(mTexWidth, mTexHeight, TextureFormat.ARGB32, false, false)
+			Texture2D streamTexture = new Texture2D(mTexWidth, mTexHeight, TextureFormat.RGBA32, false, true)
 			{
 				filterMode = FilterMode.Trilinear,
 				anisoLevel = 16
 			};
+			if (mQuadRenderer != null)
+			{
+				mQuadRenderer.material.mainTexture = streamTexture;
+			}
 			SaveLastApp();
+			LimePluginManager.Instance.HideUI();
 		}
 		protected override void OnStop()
 		{
-			mRawImage.texture = mPausingTex;
-			mRawImage.rectTransform.sizeDelta = mPausingSize;
+			if (mQuadRenderer != null)
+			{
+				mQuadRenderer.material.mainTexture = mPausingTex;
+			}
+			LimePluginManager.Instance.ShowUI();
 		}
 		//Get Shared Texture
 		private void GetResolution()
@@ -65,11 +74,18 @@ namespace PCP.LibLime
 				JNIUtil.UpdateSurface((int)mPlugin.GetRawObject());
 			}
 			IntPtr newPtr = GetTexturePtr();
-			IntPtr oldPtr = mRawImage.texture.GetNativeTexturePtr();
+			IntPtr oldPtr = IntPtr.Zero;
+			if (mQuadRenderer != null && mQuadRenderer.material.mainTexture is Texture2D quadTex)
+			{
+				oldPtr = quadTex.GetNativeTexturePtr();
+			}
 
 			if ((newPtr != IntPtr.Zero) && (newPtr != oldPtr))
 			{
-				((Texture2D)mRawImage.texture).UpdateExternalTexture(newPtr);
+				if (mQuadRenderer != null)
+				{
+					((Texture2D)mQuadRenderer.material.mainTexture).UpdateExternalTexture(newPtr);
+				}
 				Debug.Log(mTag + ": Texture updated");
 			}
 		}

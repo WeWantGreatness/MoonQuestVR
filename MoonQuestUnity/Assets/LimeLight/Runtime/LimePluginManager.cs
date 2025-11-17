@@ -16,6 +16,7 @@ namespace PCP.LibLime
 		private PcManager mPcManager;
 		private AppManager mAppManger;
 		private bool shouldResume = false;
+		[SerializeField] private GameObject mPanelCanvas;
 		public enum PluginType
 		{
 			Pc,
@@ -42,6 +43,15 @@ namespace PCP.LibLime
 
 		private void Start()
 		{
+			StartCoroutine(WaitForPermissionsAndInitialize());
+		}
+
+		private System.Collections.IEnumerator WaitForPermissionsAndInitialize()
+		{
+			// Wait for permissions (adjust time as needed)
+			Debug.Log(mTag + ": Waiting for permissions...");
+			yield return new WaitForSeconds(8f); // Delay to allow permission prompts
+			Debug.Log(mTag + ": Proceeding with initialization");
 			CreatePluginObject();
 			StartPc();
 		}
@@ -322,6 +332,25 @@ namespace PCP.LibLime
 		public void TestNotify(string m)
 		{
 			mPluginManager.Call("TestNotify", m);
+		}
+
+		// UI management for streaming
+		public void HideUI()
+		{
+			if (mPanelCanvas != null)
+			{
+				mPanelCanvas.SetActive(false);
+				Debug.Log(mTag + ": UI hidden for streaming");
+			}
+		}
+
+		public void ShowUI()
+		{
+			if (mPanelCanvas != null)
+			{
+				mPanelCanvas.SetActive(true);
+				Debug.Log(mTag + ": UI shown");
+			}
 		}
 	}
 }
