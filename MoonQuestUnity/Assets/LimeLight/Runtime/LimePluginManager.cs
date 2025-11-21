@@ -15,6 +15,7 @@ namespace PCP.LibLime
 		private StreamManager mStreamManager;
 		private PcManager mPcManager;
 		private AppManager mAppManger;
+		private InputManager mInputManager;
 		private bool shouldResume = false;
 		[SerializeField] private GameObject mPanelCanvas;
 		public enum PluginType
@@ -37,6 +38,7 @@ namespace PCP.LibLime
 			mStreamManager = GetComponent<StreamManager>();
 			mPcManager = GetComponent<PcManager>();
 			mAppManger = GetComponent<AppManager>();
+			mInputManager = GetComponent<InputManager>();
 			OnJavaCallback += ChangeUIHandler;
 			Debug.Log(mTag + ": Initialized");
 		}
