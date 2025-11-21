@@ -28,6 +28,7 @@ import com.limelight.binding.video.PerfOverlayListener;
 import com.limelight.nvstream.NvConnection;
 import com.limelight.nvstream.NvConnectionListener;
 import com.limelight.nvstream.StreamConfiguration;
+import com.limelight.nvstream.input.KeyboardPacket;
 import com.limelight.nvstream.http.ComputerDetails;
 import com.limelight.nvstream.http.NvApp;
 import com.limelight.nvstream.http.NvHTTP;
@@ -89,8 +90,50 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
         mPluginManager.Callback("UISTM");
     }
 
+    // Actual stream resolution from Sunshine (dynamic, not hardcoded)
     private int mActualStreamWidth = 0;  // Actual stream resolution from Sunshine
     private int mActualStreamHeight = 0; // Actual stream resolution from Sunshine
+
+    // --- INPUT METHODS (Unity Calls These) ---
+    public void MoveMouse(int x, int y) {
+        if (conn != null) {
+            // Use actual stream resolution for mouse position calculation
+            int streamWidth = mActualStreamWidth > 0 ? mActualStreamWidth : 7680;
+            int streamHeight = mActualStreamHeight > 0 ? mActualStreamHeight : 1080;
+            conn.sendMousePosition((short)x, (short)y, (short)streamWidth, (short)streamHeight);
+        }
+    }
+
+    public void MouseButton(int button, boolean down) {
+        if (conn != null) {
+            if (down) {
+                conn.sendMouseButtonDown((byte)button);
+            } else {
+                conn.sendMouseButtonUp((byte)button);
+            }
+        }
+    }
+
+    public void SendKeyboardInput(int keyMap, int upDown) {
+        SendKeyboardInputWithModifier(keyMap, upDown, 0);
+    }
+
+    public void SendKeyboardInputWithModifier(int keyMap, int upDown, int modifier) {
+        if (conn != null) {
+            // Convert Unity's 0/1 to protocol constants: 0 = Down, 1 = Up
+            byte keyAction = (upDown == 0) ? KeyboardPacket.KEY_DOWN : KeyboardPacket.KEY_UP;
+            conn.sendKeyboardInput((short)keyMap, keyAction, (byte)modifier, (byte)0);
+        }
+    }
+
+    public void SendMouseScroll(int amount) {
+        if (conn != null) {
+            // Sunshine expects 'clicks' multiplied by WHEEL_DELTA (120 usually)
+            // but NvConnection handles the multiplier internally in some versions.
+            // Here we pass raw clicks.
+            conn.sendMouseScroll((byte)amount);
+        }
+    }
 
     //TODO extract this to methods for better management
     @Override
@@ -251,7 +294,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
         mActualStreamWidth = prefConfig.width;
         mActualStreamHeight = prefConfig.height;
         LimeLog.info("StreamPlugin.onCreate: Requested stream resolution: " + mActualStreamWidth + "x" + mActualStreamHeight);
-        
+
         StreamConfiguration config = new StreamConfiguration.Builder()
                 .setResolution(prefConfig.width, prefConfig.height)
                 .setLaunchRefreshRate(prefConfig.fps)

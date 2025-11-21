@@ -93,7 +93,7 @@ public class NvConnection {
     public int getNegotiatedHeight() {
         return context.negotiatedHeight;
     }
-    
+
     public void stop() {
         // Interrupt any pending connection. This is thread-safe.
         MoonBridge.interruptConnection();
