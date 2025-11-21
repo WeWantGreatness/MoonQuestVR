@@ -89,8 +89,8 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
         mPluginManager.Callback("UISTM");
     }
 
-    private final int mTexWidth = 3440;
-    private final int mTextHeight = 1440;
+    private int mActualStreamWidth = 0;  // Actual stream resolution from Sunshine
+    private int mActualStreamHeight = 0; // Actual stream resolution from Sunshine
 
     //TODO extract this to methods for better management
     @Override
@@ -246,6 +246,12 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
             }
         }
 
+        // Store the requested stream resolution (will be updated to negotiated resolution when connection starts)
+        // Start with requested resolution - this is what we'll use for initial texture setup
+        mActualStreamWidth = prefConfig.width;
+        mActualStreamHeight = prefConfig.height;
+        LimeLog.info("StreamPlugin.onCreate: Requested stream resolution: " + mActualStreamWidth + "x" + mActualStreamHeight);
+        
         StreamConfiguration config = new StreamConfiguration.Builder()
                 .setResolution(prefConfig.width, prefConfig.height)
                 .setLaunchRefreshRate(prefConfig.fps)
@@ -278,10 +284,11 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
         }
 
         mRenderer = new StreamRenderer();
-        mRenderer.SetTextureResolution(mTexWidth, mTextHeight);
+        // Use actual stream resolution (requested, will update to negotiated when connection starts)
+        mRenderer.SetTextureResolution(mActualStreamWidth, mActualStreamHeight);
         streamView = new StreamView(mActivity);
-        streamView.setX(mTexWidth);
-        streamView.setY(mTextHeight);
+        streamView.setX(mActualStreamWidth);
+        streamView.setY(mActualStreamHeight);
 //                streamView.setForegroundGravity(Gravity.CENTER);
         streamView.setEGLContextClientVersion(3);
         streamView.setEGLConfigChooser(8, 8, 8, 8, 0, 0);
@@ -289,14 +296,14 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
         streamView.setRenderer(mRenderer);
 //                streamView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
         streamView.setBackgroundColor(0x00000000);
-//                mActivity.addContentView(streamView, new ViewGroup.LayoutParams(mTexWidth, mTextHeight));
+//                mActivity.addContentView(streamView, new ViewGroup.LayoutParams(mActualStreamWidth, mActualStreamHeight));
 
         mActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 LimeLog.temp("Adding StreamView to layout");
-                mActivity.addContentView(streamView, new RelativeLayout.LayoutParams(mTexWidth, mTextHeight));
-                LimeLog.info("StreamPlugin.onCreate: StreamView added to layout (size: " + mTexWidth + "x" + mTextHeight + ")");
+                mActivity.addContentView(streamView, new RelativeLayout.LayoutParams(mActualStreamWidth, mActualStreamHeight));
+                LimeLog.info("StreamPlugin.onCreate: StreamView added to layout (size: " + mActualStreamWidth + "x" + mActualStreamHeight + ")");
             }
         });
 
@@ -531,6 +538,45 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
 
     @Override
     public void connectionStarted() {
+        // Update actual stream resolution with negotiated resolution from Sunshine (may differ from requested)
+        if (conn != null) {
+            int negotiatedWidth = conn.getNegotiatedWidth();
+            int negotiatedHeight = conn.getNegotiatedHeight();
+            if (negotiatedWidth > 0 && negotiatedHeight > 0) {
+                // Update to actual negotiated resolution from Sunshine
+                if (mActualStreamWidth != negotiatedWidth || mActualStreamHeight != negotiatedHeight) {
+                    mActualStreamWidth = negotiatedWidth;
+                    mActualStreamHeight = negotiatedHeight;
+                    LimeLog.info("StreamPlugin.connectionStarted: Updated to negotiated stream resolution from Sunshine: " + mActualStreamWidth + "x" + mActualStreamHeight);
+                    
+                    // Update renderer texture resolution to match actual stream
+                    if (mRenderer != null) {
+                        mRenderer.SetTextureResolution(mActualStreamWidth, mActualStreamHeight);
+                        // Update surface texture buffer size to match negotiated resolution (decoder output)
+                        mRenderer.updateSurfaceTextureBufferSize(mActualStreamWidth, mActualStreamHeight);
+                        // Request resize to recreate hardware buffer with correct dimensions
+                        mRenderer.requestResize();
+                        LimeLog.info("StreamPlugin.connectionStarted: Renderer texture resolution and surface buffer size updated to " + mActualStreamWidth + "x" + mActualStreamHeight);
+                    }
+                    
+                    // Update StreamView size to match negotiated resolution (triggers onSurfaceChanged if needed)
+                    if (streamView != null) {
+                        mActivity.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                streamView.setX(mActualStreamWidth);
+                                streamView.setY(mActualStreamHeight);
+                                // Request layout to ensure onSurfaceChanged is called with new dimensions
+                                streamView.requestLayout();
+                                LimeLog.info("StreamPlugin.connectionStarted: StreamView size updated to " + mActualStreamWidth + "x" + mActualStreamHeight);
+                            }
+                        });
+                    }
+                } else {
+                    LimeLog.info("StreamPlugin.connectionStarted: Stream resolution matches requested: " + mActualStreamWidth + "x" + mActualStreamHeight);
+                }
+            }
+        }
 
         mActivity.runOnUiThread(new Runnable() {
             @Override
@@ -696,7 +742,14 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
     private boolean mIsPaused = false;
 
     public String GetResolution() {
-        return mTexWidth + "x" + mTextHeight;
+        // Return the actual stream resolution from Sunshine (dynamic, not hardcoded)
+        if (mActualStreamWidth > 0 && mActualStreamHeight > 0) {
+            return mActualStreamWidth + "x" + mActualStreamHeight;
+        } else {
+            // Should not happen, but return default if somehow not set
+            LimeLog.warning("StreamPlugin.GetResolution: Stream resolution not yet set, returning default 1920x1080");
+            return "1920x1080";
+        }
     }
 
     public int getTexturePtr() {

@@ -97,3 +97,54 @@ To maintain compatibility and ensure the quad renders without issues:
 Unity may prompt to enable additional features for project validation. Enabling any features beyond the ones listed above is done at your own risk, as they may introduce incompatibilities with the current rendering setup (e.g., Vulkan conflicts with OpenGL ES-based quad rendering).
 
 If you encounter rendering issues after enabling OpenXR features, revert to the listed configuration or disable OpenXR entirely.
+
+# Recent Changes
+
+## Dynamic Stream Resolution Handling (November 2024)
+
+### Overview
+Implemented dynamic resolution tracking to eliminate letterboxing issues. The stream texture now automatically adjusts to match the actual resolution being sent by Sunshine, regardless of the requested resolution.
+
+### Key Changes
+
+#### Unity C# Side (`StreamManager.cs`)
+- **Dynamic Texture Resolution**: Added `mLastTexWidth` and `mLastTexHeight` to track resolution changes
+- **Automatic Texture Recreation**: `CreateStreamTexture()` method now recreates the texture when resolution changes are detected
+- **RawImage Support**: Added optional `RawImage` component support alongside existing `MeshRenderer` quad support
+- **Resolution Monitoring**: `UpdateFrame()` now checks for resolution changes every frame and updates the texture accordingly
+
+#### Java Side (`StreamPlugin.java`)
+- **Negotiated Resolution Tracking**: Added `mActualStreamWidth` and `mActualStreamHeight` to store the actual stream resolution from Sunshine
+- **Connection Callback Updates**: `connectionStarted()` now updates to the negotiated resolution and triggers renderer updates
+- **Dynamic Resolution Query**: `GetResolution()` now returns the actual negotiated resolution, not a hardcoded value
+
+#### Renderer Updates (`StreamRenderer.java`)
+- **Dynamic Surface Texture**: Added `updateSurfaceTextureBufferSize()` method to update decoder output surface size
+- **Resolution Update Method**: `SetTextureResolution()` now properly updates internal texture dimensions
+- **Resize Handling**: Added `requestResize()` to trigger hardware buffer recreation when resolution changes
+
+#### Connection Updates (`NvConnection.java`)
+- **Resolution Getters**: Added public `getNegotiatedWidth()` and `getNegotiatedHeight()` methods to expose negotiated resolution
+
+#### Configuration (`PluginManager.java`)
+- **Multi-Monitor Support**: Updated default resolution to `7680x1080` to support 4-monitor setups (4 × 1920x1080 arranged horizontally)
+
+### Technical Details
+
+The resolution flow works as follows:
+1. **Request Phase**: App requests a resolution (currently 7680x1080 for 4 monitors)
+2. **Negotiation Phase**: Sunshine negotiates and may return a different resolution based on PC output
+3. **Update Phase**: `connectionStarted()` callback receives the negotiated resolution
+4. **Sync Phase**: All components (surface texture, hardware buffer, Unity texture) are updated to match
+5. **Monitoring Phase**: Unity continuously checks for resolution changes and recreates textures as needed
+
+### Benefits
+- No more letterboxing regardless of PC output resolution
+- Supports both `MeshRenderer` (3D quads) and `RawImage` (UI elements) for stream display
+- Automatically adapts to resolution changes without manual intervention
+- Works with any monitor configuration (single, dual, quad monitor setups)
+
+### Testing Notes
+- Resolution changes are logged with `LimeLog.info()` for debugging
+- Unity texture recreation is logged in `StreamManager` with debug messages
+- Resolution queries should return the actual stream resolution, not the requested resolution

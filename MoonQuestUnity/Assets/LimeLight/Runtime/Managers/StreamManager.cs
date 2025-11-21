@@ -6,10 +6,15 @@ namespace PCP.LibLime
 	public class StreamManager : BasePluginBridge
 	{
 		[SerializeField] private MeshRenderer mQuadRenderer; // For 3D stream display
+		[SerializeField] private UnityEngine.UI.RawImage mRawImage; // For UI RawImage display (optional)
 		private Texture mPausingTex;
+		private Texture mRawImagePausingTex; // Store original RawImage texture
 		private Vector2 mPausingSize;
 		private int mTexWidth;
 		private int mTexHeight;
+		private int mLastTexWidth = 0; // Track last known resolution to detect changes
+		private int mLastTexHeight = 0;
+		private Texture2D mStreamTexture; // Reference to current stream texture
 		private IntPtr mRawObject;
 
 		private void Awake()
@@ -20,34 +25,93 @@ namespace PCP.LibLime
 			{
 				mPausingTex = mQuadRenderer.material.mainTexture;
 			}
+			if (mRawImage != null)
+			{
+				mRawImagePausingTex = mRawImage.texture;
+			}
 		}
 
 		protected override void OnCreate()
 		{
 			Debug.Log(mTag + ": OnCreate called");
 			GetResolution();
-			Debug.Log(mTag + ":Resolution " + mTexWidth + "x" + mTexHeight);
+			Debug.Log(mTag + ": Initial resolution " + mTexWidth + "x" + mTexHeight);
 			mRawObject = mPlugin.GetRawObject();
-			Texture2D streamTexture = new Texture2D(mTexWidth, mTexHeight, TextureFormat.RGBA32, false, true)
-			{
-				filterMode = FilterMode.Trilinear,
-				anisoLevel = 16
-			};
-			if (mQuadRenderer != null)
-			{
-				mQuadRenderer.material.mainTexture = streamTexture;
-			}
+			
+			// Create initial texture (may be updated when negotiated resolution is known)
+			CreateStreamTexture(mTexWidth, mTexHeight);
+			
 			SaveLastApp();
 			LimePluginManager.Instance.HideUI();
 		}
+		
+		private void CreateStreamTexture(int width, int height)
+		{
+			// Destroy old texture if it exists and dimensions changed
+			if (mStreamTexture != null && (mStreamTexture.width != width || mStreamTexture.height != height))
+			{
+				Debug.Log(mTag + ": Recreating texture due to resolution change from " + mStreamTexture.width + "x" + mStreamTexture.height + " to " + width + "x" + height);
+				
+				// Only destroy if we're not currently using it
+				if (mQuadRenderer != null && mQuadRenderer.material.mainTexture == mStreamTexture)
+				{
+					mQuadRenderer.material.mainTexture = null;
+				}
+				if (mRawImage != null && mRawImage.texture == mStreamTexture)
+				{
+					mRawImage.texture = null;
+				}
+				
+				DestroyImmediate(mStreamTexture);
+				mStreamTexture = null;
+			}
+			
+			// Create new texture if it doesn't exist or was destroyed
+			if (mStreamTexture == null)
+			{
+				mStreamTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
+				{
+					filterMode = FilterMode.Trilinear,
+					anisoLevel = 16
+				};
+				mLastTexWidth = width;
+				mLastTexHeight = height;
+				
+				Debug.Log(mTag + ": Created stream texture with resolution " + width + "x" + height);
+			}
+			
+			// Assign to renderers
+			if (mQuadRenderer != null)
+			{
+				mQuadRenderer.material.mainTexture = mStreamTexture;
+			}
+			if (mRawImage != null)
+			{
+				mRawImage.texture = mStreamTexture;
+			}
+	}
 		protected override void OnStop()
 		{
-			if (mQuadRenderer != null)
+			// Clean up stream texture
+			if (mStreamTexture != null)
+			{
+			if (mQuadRenderer != null && mQuadRenderer.material.mainTexture == mStreamTexture)
 			{
 				mQuadRenderer.material.mainTexture = mPausingTex;
 			}
-			LimePluginManager.Instance.ShowUI();
+			if (mRawImage != null && mRawImage.texture == mStreamTexture)
+			{
+				mRawImage.texture = mRawImagePausingTex;
+			}
+			DestroyImmediate(mStreamTexture);
+			mStreamTexture = null;
 		}
+		
+		mLastTexWidth = 0;
+		mLastTexHeight = 0;
+		
+		LimePluginManager.Instance.HideUI();
+	}
 		//Get Shared Texture
 		private void GetResolution()
 		{
@@ -64,7 +128,18 @@ namespace PCP.LibLime
 		{
 			if (!IsInitialized)
 				return;
-			Debug.Log(mTag + ": UpdateFrame called");
+			
+			// Check if resolution has changed (negotiated resolution may differ from requested)
+			GetResolution();
+			if ((mTexWidth != mLastTexWidth || mTexHeight != mLastTexHeight) && mTexWidth > 0 && mTexHeight > 0)
+			{
+				Debug.Log(mTag + ": Resolution changed from " + mLastTexWidth + "x" + mLastTexHeight + " to " + mTexWidth + "x" + mTexHeight);
+				CreateStreamTexture(mTexWidth, mTexHeight);
+			}
+			
+			if (mStreamTexture == null)
+				return;
+			
 			if (SystemInfo.renderingThreadingMode == UnityEngine.Rendering.RenderingThreadingMode.MultiThreaded)
 			{
 				GL.IssuePluginEvent(JNIUtil.UpdateSurfaceFunc(), (int)mRawObject);
@@ -74,19 +149,12 @@ namespace PCP.LibLime
 				JNIUtil.UpdateSurface((int)mPlugin.GetRawObject());
 			}
 			IntPtr newPtr = GetTexturePtr();
-			IntPtr oldPtr = IntPtr.Zero;
-			if (mQuadRenderer != null && mQuadRenderer.material.mainTexture is Texture2D quadTex)
-			{
-				oldPtr = quadTex.GetNativeTexturePtr();
-			}
+			IntPtr oldPtr = mStreamTexture.GetNativeTexturePtr();
 
 			if ((newPtr != IntPtr.Zero) && (newPtr != oldPtr))
 			{
-				if (mQuadRenderer != null)
-				{
-					((Texture2D)mQuadRenderer.material.mainTexture).UpdateExternalTexture(newPtr);
-				}
-				Debug.Log(mTag + ": Texture updated");
+				// Update the texture with new native pointer (shared between both QuadRenderer and RawImage)
+				mStreamTexture.UpdateExternalTexture(newPtr);
 			}
 		}
 		private void Update()

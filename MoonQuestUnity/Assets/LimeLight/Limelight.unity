@@ -3909,12 +3909,27 @@ PrefabInstance:
     - target: {fileID: 1737502499188048075, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3268634280203397598, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
       propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4120565458329731077, guid: 617b1dc351dd1ee8fafb3205447b66ea,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 7680
+      objectReference: {fileID: 0}
+    - target: {fileID: 4120565458329731077, guid: 617b1dc351dd1ee8fafb3205447b66ea,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 1080
+      objectReference: {fileID: 0}
+    - target: {fileID: 7318533541908954850, guid: 617b1dc351dd1ee8fafb3205447b66ea,
+        type: 3}
+      propertyPath: mPanel
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7318533541908954850, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
@@ -10685,7 +10700,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &939616308
 MeshCollider:
   m_ObjectHideFlags: 0

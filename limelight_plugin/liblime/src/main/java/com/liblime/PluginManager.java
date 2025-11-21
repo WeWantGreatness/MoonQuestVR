@@ -198,7 +198,8 @@ public class PluginManager {
 
     private void fakeSetup() {
         var editor = PreferenceManager.getDefaultSharedPreferences(mActivity).edit();
-        editor.putString("list_resolution", "3440x1440");
+        // 4 monitors at 1920x1080 arranged horizontally = 7680x1080
+        editor.putString("list_resolution", "7680x1080");
 //        editor.putInt("seekbar_bitrate_kbps", 50000);
         editor.putBoolean("checkbox_host_audio", true);
         editor.putBoolean("checkbox_enable_sops", false);

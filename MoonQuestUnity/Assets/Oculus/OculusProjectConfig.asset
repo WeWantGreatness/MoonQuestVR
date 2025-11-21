@@ -25,18 +25,24 @@ MonoBehaviour:
   faceTrackingSupport: 0
   eyeTrackingSupport: 0
   virtualKeyboardSupport: 0
+  colocationSessionSupport: 0
   sceneSupport: 2
   boundaryVisibilitySupport: 0
   disableBackups: 0
   enableNSCConfig: 0
   securityXmlPath: 
+  horizonOsSdkEnabled: 0
+  minHorizonOsSdkVersion: 60
+  targetHorizonOsSdkVersion: 60
   skipUnneededShaders: 0
   enableIL2CPPLTO: 0
+  removeGradleManifest: 1
   focusAware: 1
   requiresSystemKeyboard: 1
   experimentalFeaturesEnabled: 0
   insightPassthroughEnabled: 0
   _insightPassthroughSupport: 1
+  isPassthroughCameraAccessEnabled: 0
   _processorFavor: 0
   systemSplashScreen: {fileID: 0}
   systemSplashScreenType: 0

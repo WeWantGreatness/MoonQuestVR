@@ -335,6 +335,15 @@ public class StreamRenderer implements GLSurfaceView.Renderer {
     public void requestResize() {
         mForceResize = true;
     }
+    
+    public void updateSurfaceTextureBufferSize(int width, int height) {
+        if (mSurfaceTexture != null) {
+            mSurfaceTexture.setDefaultBufferSize(width, height);
+            LimeLog.info("StreamRenderer.updateSurfaceTextureBufferSize: Updated surface texture buffer size to " + width + "x" + height);
+        } else {
+            LimeLog.warning("StreamRenderer.updateSurfaceTextureBufferSize: SurfaceTexture is null, cannot update buffer size");
+        }
+    }
 
 
 

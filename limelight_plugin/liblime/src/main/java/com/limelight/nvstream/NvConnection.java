@@ -86,6 +86,14 @@ public class NvConnection {
         return new SecureRandom().nextInt();
     }
 
+    public int getNegotiatedWidth() {
+        return context.negotiatedWidth;
+    }
+    
+    public int getNegotiatedHeight() {
+        return context.negotiatedHeight;
+    }
+    
     public void stop() {
         // Interrupt any pending connection. This is thread-safe.
         MoonBridge.interruptConnection();
