@@ -100,23 +100,28 @@ If you encounter rendering issues after enabling OpenXR features, revert to the 
 
 # Recent Changes
 
-## Dynamic Stream Resolution Handling (November 2024)
+## Dynamic Stream Resolution Handling and Multi-Monitor Setup (November 2024)
 
 ### Overview
-Implemented dynamic resolution tracking to eliminate letterboxing issues. The stream texture now automatically adjusts to match the actual resolution being sent by Sunshine, regardless of the requested resolution.
+Implemented dynamic resolution tracking to eliminate letterboxing issues. The stream texture now automatically adjusts to match the actual resolution being sent by Sunshine, regardless of the requested resolution. Additionally, added support for displaying a single wide desktop stream across multiple virtual monitors (quads) in VR using UV cropping.
 
 ### Key Changes
 
 #### Unity C# Side (`StreamManager.cs`)
 - **Dynamic Texture Resolution**: Added `mLastTexWidth` and `mLastTexHeight` to track resolution changes
 - **Automatic Texture Recreation**: `CreateStreamTexture()` method now recreates the texture when resolution changes are detected
-- **RawImage Support**: Added optional `RawImage` component support alongside existing `MeshRenderer` quad support
+- **Multi-Quad Support**: Changed from single `MeshRenderer` to `List<MeshRenderer> quadRenderers` for 4-monitor setup
+- **UV Cropping**: Added `SetupQuadMonitors()` method that applies UV offset and scale to each quad to display a portion of the wide desktop stream
+  - Each quad displays 1/4 of the total stream (e.g., 1920x1080 out of 7680x1080)
+  - UV offsets: DP-2 at 0, HDMI-0 at 1920, DP-0 at 3840, DP-4 at 5760
 - **Resolution Monitoring**: `UpdateFrame()` now checks for resolution changes every frame and updates the texture accordingly
+- **Input Methods**: Added `SendMousePosition()`, `SendMouseButton()`, `SendKeyboardInput()`, `SendMouseScroll()` methods for stream control
 
 #### Java Side (`StreamPlugin.java`)
 - **Negotiated Resolution Tracking**: Added `mActualStreamWidth` and `mActualStreamHeight` to store the actual stream resolution from Sunshine
 - **Connection Callback Updates**: `connectionStarted()` now updates to the negotiated resolution and triggers renderer updates
 - **Dynamic Resolution Query**: `GetResolution()` now returns the actual negotiated resolution, not a hardcoded value
+- **Input Methods**: Added `MoveMouse()`, `MouseButton()`, `SendKeyboardInput()`, `SendKeyboardInputWithModifier()`, `SendMouseScroll()` methods for Unity to call
 
 #### Renderer Updates (`StreamRenderer.java`)
 - **Dynamic Surface Texture**: Added `updateSurfaceTextureBufferSize()` method to update decoder output surface size
@@ -129,6 +134,42 @@ Implemented dynamic resolution tracking to eliminate letterboxing issues. The st
 #### Configuration (`PluginManager.java`)
 - **Multi-Monitor Support**: Updated default resolution to `7680x1080` to support 4-monitor setups (4 × 1920x1080 arranged horizontally)
 
+### New VR Interaction Scripts
+
+#### `CurvedScreen.cs`
+- **Purpose**: Generates a curved mesh for a screen that can be dynamically adjusted
+- **Features**:
+  - Automatically syncs dimensions from Unity Transform scale on startup (prevents scale jumps)
+  - Adjustable curvature via `radius` parameter (smaller = more curved, larger = flatter)
+  - Configurable segment count for mesh smoothness
+  - Proper triangle winding and UV mapping for correct texture orientation
+
+#### `ScreenManipulator.cs`
+- **Purpose**: Handles VR controller interaction for grabbing, moving, resizing, and curving screens
+- **Controls**:
+  - **Grip Button**: Grab/release screen (only grabs the quad you're pointing at via raycast)
+  - **Move Controller**: Move screen position and rotation
+  - **Analog Stick Up/Down**: Resize screen
+  - **Analog Stick Left/Right**: Adjust curvature (Right = curve in, Left = curve out)
+- **Features**:
+  - Raycast-based grab detection (only grabs the screen you're pointing at)
+  - Mutually exclusive resize/curve adjustments (prevents accidental scale changes)
+  - Position drift prevention when adjusting curve/resize
+  - Only works on GameObjects with `CurvedScreen` component
+
+#### `StreamPointer.cs`
+- **Purpose**: Handles VR controller-based mouse input for stream displays
+- **Features**:
+  - Raycasts from controller to detect which monitor quad is being pointed at
+  - Converts hit UV coordinates to desktop mouse position
+  - Supports multi-monitor setups with configurable offsets
+  - Sends mouse clicks and movement to `StreamManager`
+  - Only uses controller input (validates controller is connected and active)
+
+#### `InputManager.cs`
+- **Purpose**: Handles general VR controller button inputs for stream control
+- **Features**: Manages button mappings for stream-related actions
+
 ### Technical Details
 
 The resolution flow works as follows:
@@ -138,13 +179,23 @@ The resolution flow works as follows:
 4. **Sync Phase**: All components (surface texture, hardware buffer, Unity texture) are updated to match
 5. **Monitoring Phase**: Unity continuously checks for resolution changes and recreates textures as needed
 
+Multi-monitor UV cropping works as follows:
+1. **Single Wide Texture**: One `Texture2D` contains the entire desktop stream (e.g., 7680x1080)
+2. **UV Mapping**: Each quad's material uses `mainTextureOffset` and `mainTextureScale` to display a portion
+3. **Calculation**: UV offset = (monitor X position) / (total width), UV scale = (monitor width) / (total width)
+4. **Result**: Each quad shows 1/4 of the desktop, arranged horizontally in VR space
+
 ### Benefits
 - No more letterboxing regardless of PC output resolution
-- Supports both `MeshRenderer` (3D quads) and `RawImage` (UI elements) for stream display
+- Supports multi-monitor setups with automatic UV cropping
 - Automatically adapts to resolution changes without manual intervention
+- VR interaction for screen manipulation (grab, move, resize, curve)
+- Controller-based mouse input for stream control
 - Works with any monitor configuration (single, dual, quad monitor setups)
 
 ### Testing Notes
 - Resolution changes are logged with `LimeLog.info()` for debugging
 - Unity texture recreation is logged in `StreamManager` with debug messages
 - Resolution queries should return the actual stream resolution, not the requested resolution
+- CurvedScreen automatically syncs with Transform scale on startup to prevent scale jumps
+- ScreenManipulator uses raycast detection to ensure only the pointed-at screen is grabbed
