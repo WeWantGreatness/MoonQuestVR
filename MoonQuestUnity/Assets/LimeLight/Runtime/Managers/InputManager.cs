@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using PCP.LibLime;
 
 /// <summary>
@@ -26,10 +27,12 @@ public class InputManager : MonoBehaviour
 
     [Header("Settings")]
     public float scrollSpeed = 1.0f;
-    public float scrollDeadzone = 0.2f;
 
     // State tracking to prevent rapid-fire clicks
     private bool r3WasPressed = false;
+    
+    // State tracking for horizontal scroll coroutine
+    private bool isSendingHorizontalScroll = false;
 
     void Awake()
     {
@@ -83,11 +86,11 @@ public class InputManager : MonoBehaviour
         }
         r3WasPressed = r3Pressed;
 
-        // 4. Scroll Wheel (Right Stick Movement)
+        // 4. Scroll Wheel (Right Stick Movement) - Vertical and Horizontal
         Vector2 scroll = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, OVRInput.Controller.RTouch);
         
-        // Vertical Scroll
-        if (Mathf.Abs(scroll.y) > scrollDeadzone)
+        // Vertical Scroll (Up/Down)
+        if (Mathf.Abs(scroll.y) > 0.01f) // Removed deadzone - minimal threshold just to avoid drift
         {
             // Convert stick value (-1 to 1) to scroll "clicks"
             // Positive Y (Up) = Scroll Up. Negative Y (Down) = Scroll Down.
@@ -96,6 +99,19 @@ public class InputManager : MonoBehaviour
             if (scrollAmount != 0)
             {
                 streamManager.SendMouseScroll(scrollAmount);
+            }
+        }
+        
+        // Horizontal Scroll (Left/Right) - Use Shift+Scroll with proper timing
+        // Many Linux apps interpret Shift+Scroll as horizontal scroll
+        if (Mathf.Abs(scroll.x) > 0.01f && !isSendingHorizontalScroll) // Removed deadzone, prevent overlapping coroutines
+        {
+            // INVERTED: Right (+X) = Scroll Left, Left (-X) = Scroll Right
+            // Negate scroll.x to fix direction
+            int horizontalScroll = Mathf.RoundToInt(-scroll.x * scrollSpeed);
+            if (horizontalScroll != 0)
+            {
+                StartCoroutine(SendHorizontalScroll(horizontalScroll));
             }
         }
     }
@@ -113,21 +129,24 @@ public class InputManager : MonoBehaviour
         }
 
         // 6. Launch Onboard (Button X) - Sends Super+O keyboard shortcut
-        if (OVRInput.GetDown(OVRInput.Button.Three, OVRInput.Controller.LTouch))
+        if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.LTouch))
         {
-            // Super key (Windows key) = 0x5B (VK_LWIN)
-            // O key = 0x4F
-            // MODIFIER_META = 0x08
-            const int VK_LWIN = 0x5B;  // Left Windows/Super key
+            // Scancode 0x5B (91 decimal) = Super/Windows key (from showkey: 0xe0 0x5b)
+            // O key = 0x4F (79 decimal)
+            const int VK_LWIN = 0x5B;  // Super key - matches scancode 0x5b
             const int VK_O = 0x4F;     // O key
-            const int MODIFIER_META = 0x08;  // Super/Windows modifier
+            const int SS_KBE_FLAG_NON_NORMALIZED = 0x01;  // Send raw scancode to Linux
             
-            // Press Super+O to launch onboard
-            // Note: Super key is pressed without modifier flag (it gets handled specially)
-            streamManager.SendKeyboardInput(VK_LWIN, 0);  // Super down
-            streamManager.SendKeyboardInputWithModifier(VK_O, 0, MODIFIER_META);    // O down (with Super)
-            streamManager.SendKeyboardInputWithModifier(VK_O, 1, MODIFIER_META);    // O up (with Super)
-            streamManager.SendKeyboardInput(VK_LWIN, 1);  // Super up
+            Debug.Log("InputManager: Sending Super+O shortcut");
+            
+            // Simple sequence: Super down -> O down -> O up -> Super up
+            // No delays, no modifiers - just press Super, then press O
+            streamManager.SendKeyboardInputWithModifierAndFlags(VK_LWIN, 0, 0, SS_KBE_FLAG_NON_NORMALIZED);  // Super down
+            streamManager.SendKeyboardInput(VK_O, 0);  // O down
+            streamManager.SendKeyboardInput(VK_O, 1);  // O up
+            streamManager.SendKeyboardInputWithModifierAndFlags(VK_LWIN, 1, 0, SS_KBE_FLAG_NON_NORMALIZED);  // Super up
+            
+            Debug.Log("InputManager: Super+O sent");
         }
         
         // 7. Menu Button - Spawn/Remove Monitors
@@ -137,29 +156,18 @@ public class InputManager : MonoBehaviour
     [Header("Menu Button Settings")]
     public Transform rightHandAnchor; // Drag RightControllerAnchor here
     
-    private float menuButtonHoldTime = 0f;
-    private const float REMOVE_HOLD_TIME = 2.0f;
     private bool wasMenuPressed = false;
-    private bool hasRemovedThisHold = false; // Prevent multiple removals per hold
     
     void HandleMenuButton()
     {
         bool menuPressed = OVRInput.Get(OVRInput.Button.Start);
+        bool rightGripHeld = OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch);
         
-        if (menuPressed)
+        // On menu button press
+        if (menuPressed && !wasMenuPressed)
         {
-            menuButtonHoldTime += Time.deltaTime;
-            
-            // On initial press (click), spawn a monitor
-            if (!wasMenuPressed)
-            {
-                streamManager.SpawnNextMonitor();
-                Debug.Log("InputManager: Spawned next monitor");
-                hasRemovedThisHold = false;
-            }
-            
-            // If held for 2+ seconds, remove the monitor under pointer
-            if (menuButtonHoldTime >= REMOVE_HOLD_TIME && !hasRemovedThisHold)
+            // If right grip is held, remove monitor under pointer
+            if (rightGripHeld)
             {
                 // Raycast from controller to find monitor
                 if (rightHandAnchor != null)
@@ -170,18 +178,44 @@ public class InputManager : MonoBehaviour
                     if (monitorToRemove != null)
                     {
                         streamManager.RemoveMonitor(monitorToRemove);
-                        Debug.Log("InputManager: Removed monitor: " + monitorToRemove.name);
-                        hasRemovedThisHold = true; // Prevent multiple removals per hold
                     }
                 }
             }
-        }
-        else
-        {
-            menuButtonHoldTime = 0f;
-            hasRemovedThisHold = false;
+            else
+            {
+                // Otherwise, spawn a monitor
+                streamManager.SpawnNextMonitor();
+            }
         }
         
         wasMenuPressed = menuPressed;
+    }
+    
+    
+    // Coroutine to send horizontal scroll via Shift+Scroll with proper timing
+    IEnumerator SendHorizontalScroll(int scrollAmount)
+    {
+        isSendingHorizontalScroll = true; // Prevent overlapping coroutines
+        
+        const int VK_LSHIFT = 0xA0;  // Left Shift key
+        const int MODIFIER_SHIFT = 0x01;
+        
+        Debug.Log($"InputManager: Sending horizontal scroll via Shift+Scroll: {scrollAmount}");
+        
+        // 1. Press Shift down
+        streamManager.SendKeyboardInputWithModifier(VK_LSHIFT, 0, MODIFIER_SHIFT);
+        yield return new WaitForSeconds(0.02f); // Small delay for OS to register Shift
+        
+        // 2. Send scroll while Shift is held
+        streamManager.SendMouseScroll(scrollAmount);
+        yield return new WaitForSeconds(0.02f);
+        
+        // 3. Release Shift
+        streamManager.SendKeyboardInputWithModifier(VK_LSHIFT, 1, MODIFIER_SHIFT);
+        
+        yield return new WaitForSeconds(0.05f); // Wait before allowing another scroll
+        
+        isSendingHorizontalScroll = false; // Allow next scroll
+        Debug.Log("InputManager: Horizontal scroll sent");
     }
 }

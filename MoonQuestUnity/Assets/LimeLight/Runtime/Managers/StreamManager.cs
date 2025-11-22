@@ -18,39 +18,79 @@ namespace PCP.LibLime
 		private Texture2D mStreamTexture; // Reference to current stream texture
 	private IntPtr mRawObject;
 
-		private void Awake()
+	private void Awake()
+	{
+		Type = LimePluginManager.PluginType.Stream;
+		mTag = "StreamManager";
+		
+		// Save pause textures from all quads for OnStop
+		mPausingTextures.Clear();
+		if (quadRenderers != null && quadRenderers.Count > 0)
 		{
-			Type = LimePluginManager.PluginType.Stream;
-			mTag = "StreamManager";
-			
-			// Save pause textures from all quads for OnStop
-			mPausingTextures.Clear();
-			if (quadRenderers != null && quadRenderers.Count > 0)
+			foreach (var quad in quadRenderers)
 			{
-				foreach (var quad in quadRenderers)
+				if (quad != null && quad.material != null)
+		{
+					mPausingTextures.Add(quad.material.mainTexture);
+				}
+				else
 				{
-					if (quad != null && quad.material != null)
+					mPausingTextures.Add(null);
+				}
+			}
+		}
+		
+		// IMPORTANT: Disable all quads on startup to prevent white screens
+		// Only enable the first one after stream starts (in OnCreate)
+		// This prevents quads from showing white material before stream texture is ready
+		if (quadRenderers != null && quadRenderers.Count > 0)
+		{
+			for (int i = 0; i < quadRenderers.Count; i++)
 			{
-						mPausingTextures.Add(quad.material.mainTexture);
+				if (quadRenderers[i] != null)
+				{
+					// Disable ALL quads on startup - they'll be enabled when stream starts
+					quadRenderers[i].gameObject.SetActive(false);
+					Debug.Log(mTag + ": Disabled quad on startup: " + quadRenderers[i].gameObject.name);
+				}
+			}
+		}
+	}
+
+	protected override void OnCreate()
+	{
+		Debug.Log(mTag + ": OnCreate called - stream starting");
+		
+		// Enable only the first monitor when stream starts
+		// All quads were disabled in Awake() to prevent white screens on startup
+		if (quadRenderers != null && quadRenderers.Count > 0)
+		{
+			for (int i = 0; i < quadRenderers.Count; i++)
+			{
+				if (quadRenderers[i] != null)
+				{
+					if (i == 0)
+					{
+						// Enable the first quad when stream starts
+						quadRenderers[i].gameObject.SetActive(true);
+						Debug.Log(mTag + ": Enabled first monitor on stream start: " + quadRenderers[i].gameObject.name);
 					}
 					else
 					{
-						mPausingTextures.Add(null);
+						// Ensure all other quads remain disabled (they may have been enabled in Unity editor)
+						quadRenderers[i].gameObject.SetActive(false);
 					}
 				}
 			}
 		}
-
-	protected override void OnCreate()
-	{
-		Debug.Log(mTag + ": OnCreate called");
+		
 		GetResolution();
 			Debug.Log(mTag + ": Initial resolution " + mTexWidth + "x" + mTexHeight);
 		mRawObject = mPlugin.GetRawObject();
 		
 			// Create initial texture (may be updated when negotiated resolution is known)
 			CreateStreamTexture(mTexWidth, mTexHeight);
-			
+		
 		SaveLastApp();
 		LimePluginManager.Instance.HideUI();
 	}
@@ -124,7 +164,8 @@ namespace PCP.LibLime
 			for (int i = 0; i < quadRenderers.Count && i < 4; i++)
 			{
 				var quad = quadRenderers[i];
-				if (quad == null || quad.material == null) continue;
+				// Only set up monitors that are active (enabled)
+				if (quad == null || !quad.gameObject.activeSelf || quad.material == null) continue;
 				
 				// Assign the shared texture to the quad's material
 				quad.material.mainTexture = mStreamTexture;
@@ -291,8 +332,18 @@ namespace PCP.LibLime
 		/// </summary>
 		public void SendKeyboardInputWithModifier(int keyMap, int upDown, int modifier)
 		{
+			SendKeyboardInputWithModifierAndFlags(keyMap, upDown, modifier, 0);
+		}
+
+		/// <summary>
+		/// Send keyboard input with modifier and flags (for Sunshine extensions).
+		/// modifier: 0x01=Shift, 0x02=Ctrl, 0x04=Alt, 0x08=Meta/Super
+		/// flags: 0x01=SS_KBE_FLAG_NON_NORMALIZED (Sunshine - send raw keycode)
+		/// </summary>
+		public void SendKeyboardInputWithModifierAndFlags(int keyMap, int upDown, int modifier, int flags)
+		{
 			if (!IsInitialized || mPlugin == null) return;
-			mPlugin.Call("SendKeyboardInputWithModifier", keyMap, upDown, modifier);
+			mPlugin.Call("SendKeyboardInputWithModifierAndFlags", keyMap, upDown, modifier, flags);
 		}
 
 		/// <summary>
@@ -305,12 +356,47 @@ namespace PCP.LibLime
 		}
 
 		/// <summary>
-		/// Stub for dynamic spawning used by InputManager. With MonitorSpawner,
-		/// all 4 monitors are spawned at startup, so this currently only logs.
+		/// Send horizontal mouse scroll (amount: positive=right, negative=left, in "clicks").
+		/// This is the native horizontal scroll event (like tilting mouse wheel left/right).
+		/// </summary>
+		public void SendMouseHScroll(int amount)
+		{
+			if (!IsInitialized || mPlugin == null) return;
+			mPlugin.Call("SendMouseHScroll", amount);
+		}
+
+		/// <summary>
+		/// Enable the next disabled monitor from the quadRenderers list.
+		/// Used by InputManager when menu button is clicked.
 		/// </summary>
 		public void SpawnNextMonitor()
 		{
-			Debug.LogWarning(mTag + ": SpawnNextMonitor called, but dynamic spawning is handled by MonitorSpawner.");
+			if (quadRenderers == null || quadRenderers.Count == 0)
+			{
+				Debug.LogWarning(mTag + ": SpawnNextMonitor called but quadRenderers list is empty!");
+				return;
+			}
+			
+			// Find the first disabled monitor in the list
+			foreach (var quad in quadRenderers)
+			{
+				if (quad != null && !quad.gameObject.activeSelf)
+				{
+					// Enable this monitor
+					quad.gameObject.SetActive(true);
+					Debug.Log(mTag + ": Enabled monitor " + quad.gameObject.name);
+					
+					// If stream is already active, assign the texture to this newly enabled monitor
+					if (mStreamTexture != null)
+					{
+						SetupQuadMonitors(); // This will assign texture to all enabled quads
+					}
+					return;
+				}
+			}
+			
+			// All monitors are already enabled
+			Debug.Log(mTag + ": SpawnNextMonitor called but all monitors are already enabled!");
 		}
 
 		/// <summary>
@@ -332,13 +418,19 @@ namespace PCP.LibLime
 		}
 
 	/// <summary>
-	/// Removes a monitor GameObject from the scene. Used by InputManager
-	/// when holding the menu button.
+	/// Removes a monitor GameObject from the scene by disabling it. Used by InputManager
+	/// when holding the menu button. Disabled monitors can be re-enabled via SpawnNextMonitor().
 	/// </summary>
 	public void RemoveMonitor(GameObject monitorToRemove)
 	{
 		if (monitorToRemove == null) return;
-		Destroy(monitorToRemove);
+		
+		// Clear grab state if this monitor was being grabbed
+		ScreenManipulator.ClearGrabState();
+		
+		// Disable the monitor instead of destroying it, so it can be re-enabled later
+		monitorToRemove.SetActive(false);
+		Debug.Log(mTag + ": Disabled monitor " + monitorToRemove.name);
 	}
 	
 	}

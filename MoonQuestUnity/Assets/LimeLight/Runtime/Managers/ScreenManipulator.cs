@@ -33,6 +33,23 @@ public class ScreenManipulator : MonoBehaviour
     // Static lock to prevent moving multiple objects at once
     private static GameObject activeGrabber = null;
     private Collider screenCollider; // Collider for raycast detection
+    
+    /// <summary>
+    /// Public method to clear the grab state. Called when a monitor is removed.
+    /// </summary>
+    public static void ClearGrabState()
+    {
+        if (activeGrabber != null)
+        {
+            ScreenManipulator manipulator = activeGrabber.GetComponent<ScreenManipulator>();
+            if (manipulator != null)
+            {
+                manipulator.isGrabbing = false;
+            }
+            activeGrabber = null;
+            Debug.Log("ScreenManipulator: Cleared grab state");
+        }
+    }
 
     void Start() 
     { 
@@ -136,6 +153,24 @@ public class ScreenManipulator : MonoBehaviour
 
     void Update()
     {
+        // Check if activeGrabber still exists (in case it was destroyed/disabled)
+        if (activeGrabber != null && !activeGrabber.activeInHierarchy)
+        {
+            activeGrabber = null;
+            isGrabbing = false;
+        }
+        
+        // Only process grab logic if this GameObject is active
+        if (!gameObject.activeInHierarchy)
+        {
+            if (isGrabbing && activeGrabber == gameObject)
+            {
+                isGrabbing = false;
+                activeGrabber = null;
+            }
+            return;
+        }
+        
         // 1. Grab Start - Only grab if controller is pointing at THIS screen
         if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, controller))
         {
@@ -186,9 +221,16 @@ public class ScreenManipulator : MonoBehaviour
             }
             
             // Check if we're adjusting curvature or resizing (with deadzone applied)
-            // These are now mutually exclusive - left/right ONLY adjusts curve, up/down ONLY resizes
-            bool isAdjustingCurve = screen != null && Mathf.Abs(stick.x) >= threshold && Mathf.Abs(stick.y) < threshold;
-            bool isResizing = screen != null && Mathf.Abs(stick.y) >= threshold && Mathf.Abs(stick.x) < threshold;
+            // Use magnitude comparison to prioritize which action to take
+            // If X input is dominant, adjust curve. If Y input is dominant, resize.
+            float absX = Mathf.Abs(stick.x);
+            float absY = Mathf.Abs(stick.y);
+            bool hasXInput = absX >= threshold;
+            bool hasYInput = absY >= threshold;
+            
+            // Determine which action to take based on which input is stronger
+            bool isAdjustingCurve = screen != null && hasXInput && absX >= absY;
+            bool isResizing = screen != null && hasYInput && absY > absX;
 
             // Joystick Adjustments (Resize/Curve) - Handle FIRST
             // IMPORTANT: These are mutually exclusive - resizing should NOT happen when adjusting curvature
@@ -196,22 +238,29 @@ public class ScreenManipulator : MonoBehaviour
             if (screen != null)
             {
                 // Adjust curvature with left/right stick (ONLY affects curvature, NOT scale or position)
-                // This takes priority over resize to prevent scale changes when only wanting to curve
-                if (isAdjustingCurve && !isResizing) // Only adjust curve if NOT also resizing
+                if (isAdjustingCurve)
                 {
                     // Invert stick X so Right (+X) decreases radius (More Curved), Left (-X) increases radius (Flatter)
+                    float oldRadius = screen.radius;
                     screen.radius -= stick.x * curveSpeed * Time.deltaTime;
                     screen.radius = Mathf.Clamp(screen.radius, 1.0f, 500.0f);
-                    screen.GenerateMesh();
+                    
+                    // Only regenerate mesh if radius actually changed
+                    if (Mathf.Abs(screen.radius - oldRadius) > 0.001f)
+                    {
+                        screen.GenerateMesh();
+                        Debug.Log($"ScreenManipulator: Adjusted curvature - radius={screen.radius:F2}, stick.x={stick.x:F2}");
+                    }
                     didAdjustCurveOrResize = true;
                 }
                 // Resize with up/down stick (ONLY when NOT adjusting curvature)
-                else if (isResizing && !isAdjustingCurve) // Only resize if NOT also adjusting curve
+                else if (isResizing)
                 {
                     float scale = 1.0f + (stick.y * resizeSpeed * Time.deltaTime);
                     screen.width *= scale;
                     screen.height *= scale;
                     screen.GenerateMesh();
+                    Debug.Log($"ScreenManipulator: Resized screen - width={screen.width:F2}, height={screen.height:F2}, stick.y={stick.y:F2}");
                     didAdjustCurveOrResize = true;
                 }
             }

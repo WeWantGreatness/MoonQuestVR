@@ -119,10 +119,14 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
     }
 
     public void SendKeyboardInputWithModifier(int keyMap, int upDown, int modifier) {
+        SendKeyboardInputWithModifierAndFlags(keyMap, upDown, modifier, 0);
+    }
+
+    public void SendKeyboardInputWithModifierAndFlags(int keyMap, int upDown, int modifier, int flags) {
         if (conn != null) {
             // Convert Unity's 0/1 to protocol constants: 0 = Down, 1 = Up
             byte keyAction = (upDown == 0) ? KeyboardPacket.KEY_DOWN : KeyboardPacket.KEY_UP;
-            conn.sendKeyboardInput((short)keyMap, keyAction, (byte)modifier, (byte)0);
+            conn.sendKeyboardInput((short)keyMap, keyAction, (byte)modifier, (byte)flags);
         }
     }
 
@@ -132,6 +136,14 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
             // but NvConnection handles the multiplier internally in some versions.
             // Here we pass raw clicks.
             conn.sendMouseScroll((byte)amount);
+        }
+    }
+
+    public void SendMouseHScroll(int amount) {
+        if (conn != null) {
+            // Send horizontal scroll (left/right) - native horizontal scroll event
+            // This is what happens when you tilt a mouse wheel left/right or use trackpad horizontal scroll
+            conn.sendMouseHScroll((byte)amount);
         }
     }
 

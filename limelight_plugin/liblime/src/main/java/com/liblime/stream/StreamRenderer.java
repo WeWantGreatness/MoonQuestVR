@@ -335,7 +335,7 @@ public class StreamRenderer implements GLSurfaceView.Renderer {
     public void requestResize() {
         mForceResize = true;
     }
-    
+
     public void updateSurfaceTextureBufferSize(int width, int height) {
         if (mSurfaceTexture != null) {
             mSurfaceTexture.setDefaultBufferSize(width, height);
