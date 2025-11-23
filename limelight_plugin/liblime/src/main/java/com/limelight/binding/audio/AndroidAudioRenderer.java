@@ -128,16 +128,22 @@ public class AndroidAudioRenderer implements AudioRenderer {
             switch (i) {
                 case 0:
                 case 2:
-                    bufferSize = bytesPerFrame * 2;
+                    // Use much larger buffer size to prevent clipping (skip small buffer attempts entirely)
+                    bufferSize = Math.max(AudioTrack.getMinBufferSize(sampleRate,
+                            channelConfig,
+                            AudioFormat.ENCODING_PCM_16BIT),
+                            bytesPerFrame * 8);  // Increased to *8 to prevent underruns/clipping
+                    // Round to next frame
+                    bufferSize = (((bufferSize + (bytesPerFrame - 1)) / bytesPerFrame) * bytesPerFrame);
                     break;
 
                 case 1:
                 case 3:
-                    // Try the larger buffer size
+                    // Use even larger buffer for maximum stability
                     bufferSize = Math.max(AudioTrack.getMinBufferSize(sampleRate,
                             channelConfig,
                             AudioFormat.ENCODING_PCM_16BIT),
-                            bytesPerFrame * 2);
+                            bytesPerFrame * 10);  // Increased to *10 for maximum stability
 
                     // Round to next frame
                     bufferSize = (((bufferSize + (bytesPerFrame - 1)) / bytesPerFrame) * bytesPerFrame);
@@ -155,6 +161,12 @@ public class AndroidAudioRenderer implements AudioRenderer {
             // Skip low latency options when using audio effects, since low latency mode
             // precludes the use of the audio effect pipeline (as of Android 13).
             if (enableAudioFx && lowLatency) {
+                continue;
+            }
+
+            // Skip low latency mode entirely to prevent clipping (low latency = smaller buffers)
+            // Always use standard mode for better stability
+            if (lowLatency) {
                 continue;
             }
 

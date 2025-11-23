@@ -18961,7 +18961,7 @@ MonoBehaviour:
   minDynamicResolutionScale: 1
   maxDynamicResolutionScale: 1
   minRenderScale: 0.7
-  maxRenderScale: 1
+  maxRenderScale: 1.5
   _headPoseRelativeOffsetRotation: {x: 0, y: 0, z: 0}
   _headPoseRelativeOffsetTranslation: {x: 0, y: 0, z: 0}
   profilerTcpPort: 32419

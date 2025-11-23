@@ -2452,7 +2452,7 @@ Transform:
   m_GameObject: {fileID: 1267573855}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2, z: 1}
+  m_LocalPosition: {x: 1, y: 1.25, z: 1}
   m_LocalScale: {x: 1.69, y: 0.9, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6038,26 +6038,15 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
-<<<<<<< Updated upstream
-    - target: {fileID: 4120565458329731077, guid: 617b1dc351dd1ee8fafb3205447b66ea,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 7680
-      objectReference: {fileID: 0}
-    - target: {fileID: 4120565458329731077, guid: 617b1dc351dd1ee8fafb3205447b66ea,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 1080
-=======
     - target: {fileID: 5391989198640353395, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
       propertyPath: _size.x
-      value: 800
+      value: 3402
       objectReference: {fileID: 0}
     - target: {fileID: 5391989198640353395, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
       propertyPath: _size.y
-      value: 800
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 6046785631639525999, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
@@ -6103,7 +6092,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_IsActive
       value: 0
->>>>>>> Stashed changes
       objectReference: {fileID: 0}
     - target: {fileID: 7318533541908954850, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
@@ -15554,15 +15542,9 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-<<<<<<< Updated upstream
-  m_IsActive: 0
---- !u!64 &939616308
-MeshCollider:
-=======
   m_IsActive: 1
 --- !u!224 &927096521
 RectTransform:
->>>>>>> Stashed changes
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -16796,7 +16778,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &1000882150
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -17904,7 +17886,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &1039787153
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -21990,7 +21972,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &1267573856
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -24044,7 +24026,7 @@ Transform:
   m_GameObject: {fileID: 924766981}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2, y: 2, z: 1}
+  m_LocalPosition: {x: 0, y: 1.25, z: 1}
   m_LocalScale: {x: 1.69, y: 0.9, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -25288,7 +25270,7 @@ MonoBehaviour:
   quest3MinDynamicResolutionScale: 1
   quest3MaxDynamicResolutionScale: 1
   minRenderScale: 0.7
-  maxRenderScale: 1
+  maxRenderScale: 1.5
   _headPoseRelativeOffsetRotation: {x: 0, y: 0, z: 0}
   _headPoseRelativeOffsetTranslation: {x: 0, y: 0, z: 0}
   profilerTcpPort: 32419
@@ -25682,7 +25664,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 1000
-  field of view: 90
+  field of view: 117.7
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -26572,7 +26554,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   scrollSpeed: 5
-  scrollDeadzone: 0
   rightHandAnchor: {fileID: 1233966809}
 --- !u!1 &1460997067
 GameObject:

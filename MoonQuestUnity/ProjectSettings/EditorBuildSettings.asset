@@ -8,6 +8,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/LimeLight/Limelight.unity
     guid: 332ba056ce2c12904ad9ca2547fec832
+  - enabled: 0
+    path: Assets/LimeLight/Limelightbackup.unity
+    guid: a6929277d46e5f5a89ae2c7a16c0d487
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: c750e749b924e0947ad2b6ae5b481df8,
       type: 2}

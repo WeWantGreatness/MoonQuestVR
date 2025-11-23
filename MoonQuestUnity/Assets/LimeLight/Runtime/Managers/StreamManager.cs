@@ -9,6 +9,10 @@ namespace PCP.LibLime
 		[Header("4 Quad Setup (MeshRenderer)")]
 		[Tooltip("Drag your 4 manually created quads with MeshRenderer here. Order: DP-2, HDMI-0, DP-0, DP-4")]
 		public List<MeshRenderer> quadRenderers = new List<MeshRenderer>();
+		
+		[Header("Quad Borders")]
+		[Tooltip("Automatically add sky blue borders around all monitor quads for visibility")]
+		public bool enableQuadBorders = true;
 	
 		private List<Texture> mPausingTextures = new List<Texture>();
 	private int mTexWidth;
@@ -49,6 +53,17 @@ namespace PCP.LibLime
 			{
 				if (quadRenderers[i] != null)
 				{
+					// Add border component if enabled
+					if (enableQuadBorders)
+					{
+						QuadBorder border = quadRenderers[i].GetComponent<QuadBorder>();
+						if (border == null)
+						{
+							border = quadRenderers[i].gameObject.AddComponent<QuadBorder>();
+							Debug.Log(mTag + ": Added border to quad: " + quadRenderers[i].gameObject.name);
+						}
+					}
+					
 					// Disable ALL quads on startup - they'll be enabled when stream starts
 					quadRenderers[i].gameObject.SetActive(false);
 					Debug.Log(mTag + ": Disabled quad on startup: " + quadRenderers[i].gameObject.name);
@@ -123,9 +138,10 @@ namespace PCP.LibLime
 			{
 				mStreamTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
 				{
-					filterMode = FilterMode.Trilinear,
+					filterMode = FilterMode.Bilinear,
 					anisoLevel = 16
 				};
+				// Mipmaps are disabled via the 'false' parameter in Texture2D constructor (mipChain = false)
 				mLastTexWidth = width;
 				mLastTexHeight = height;
 				

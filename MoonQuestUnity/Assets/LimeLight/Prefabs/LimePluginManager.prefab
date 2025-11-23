@@ -48,6 +48,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a5ea6c0e474a28a696c53f5ad5f8649, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mPanelCanvas: {fileID: 0}
   Blocker: {fileID: 4801178872228361930}
   DialogWindow: {fileID: 1018799916890540247}
   DialogText: {fileID: 4193609536680798821}
@@ -99,7 +100,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mPanel: {fileID: 0}
-  mRawImage: {fileID: 5466990608644766376}
+  quadRenderers: []
 --- !u!1 &675347475592804258
 GameObject:
   m_ObjectHideFlags: 0
@@ -634,7 +635,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4120565458329731077
 RectTransform:
   m_ObjectHideFlags: 0
@@ -669,7 +670,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1737502499188048075}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
   m_Name: 
