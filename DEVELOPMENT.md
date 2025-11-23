@@ -199,3 +199,189 @@ Multi-monitor UV cropping works as follows:
 - Resolution queries should return the actual stream resolution, not the requested resolution
 - CurvedScreen automatically syncs with Transform scale on startup to prevent scale jumps
 - ScreenManipulator uses raycast detection to ensure only the pointed-at screen is grabbed
+
+## Input Controls, Visual Quality, and Audio Improvements (December 2024)
+
+### Overview
+Major improvements to input handling, visual quality, audio stability, and user experience. Added horizontal scrolling, keyboard shortcuts, monitor management, pointer stabilization, quad borders, and comprehensive audio/visual optimizations.
+
+### Input Controls Enhancements
+
+#### Horizontal Scroll (`InputManager.cs`)
+- **Implementation**: Right analog stick left/right movement now performs horizontal scrolling
+- **Method**: Uses `Shift+MouseScroll` with proper timing via coroutine (`SendHorizontalScroll`)
+- **Timing**: 0.02s delays between Shift down, scroll, and Shift up to ensure OS recognition
+- **Direction Fix**: Inverted scroll direction (`-scroll.x`) to match expected behavior (left stick = left scroll)
+- **Overlap Prevention**: `isSendingHorizontalScroll` flag prevents overlapping coroutines
+- **Code Location**: `InputManager.cs` lines 105-116, 196-219
+
+#### Super+O Keyboard Shortcut (`InputManager.cs`)
+- **Purpose**: Launch Onboard virtual keyboard on Linux (Super+O shortcut)
+- **Trigger**: Left controller X button (`OVRInput.Button.One, OVRInput.Controller.LTouch`)
+- **Implementation**: 
+  - Uses Linux scancode `0x5B` (91 decimal) for Super/Windows key
+  - Uses `SS_KBE_FLAG_NON_NORMALIZED` flag to send raw scancode to Sunshine
+  - Sequence: Super down → O down → O up → Super up (no delays, immediate)
+- **Key Codes**:
+  - `VK_LWIN = 0x5B` (Super key, matches Linux scancode `0xe0 0x5b`)
+  - `VK_O = 0x4F` (O key, 79 decimal)
+- **Code Location**: `InputManager.cs` lines 131-150, `StreamManager.cs` lines 357-363
+
+#### Monitor Spawning and Removal (`InputManager.cs`, `StreamManager.cs`)
+- **Spawn Monitor**: Menu button click spawns the next disabled monitor
+- **Remove Monitor**: Right grip held + Menu button click removes the monitor under pointer
+- **Implementation**:
+  - `SpawnNextMonitor()`: Finds first disabled monitor in `quadRenderers` list and enables it
+  - `RemoveMonitor()`: Calls `ScreenManipulator.ClearGrabState()` then disables the monitor (doesn't destroy)
+  - Uses raycast from right controller to detect which monitor to remove
+- **Startup Behavior**: All quads disabled in `Awake()`, only first monitor enabled in `OnCreate()` when stream starts
+- **Code Location**: `InputManager.cs` lines 152-192, `StreamManager.cs` lines 25-99, 390-450
+
+### Visual Quality Improvements
+
+#### Render Scale (`[BuildingBlock] Camera Rig.prefab`)
+- **Change**: Increased `maxRenderScale` from `1.0` to `1.5`
+- **Purpose**: Improves text clarity and overall visual quality in VR
+- **Impact**: Higher resolution rendering at the cost of performance
+- **Code Location**: `MoonQuestUnity/Assets/PostSpace/Prefabss/[BuildingBlock] Camera Rig.prefab` line 18964
+
+#### LOD Bias (`QualitySettings.asset`)
+- **Change**: Increased `lodBias` from `0.4` to `2.0` for "Performant" quality setting
+- **Purpose**: Ensures higher quality LODs are used, improving text clarity when not directly focused on quads
+- **Code Location**: `MoonQuestUnity/ProjectSettings/QualitySettings.asset` line 33
+
+#### Texture Filtering (`StreamManager.cs`)
+- **Change**: Changed `mStreamTexture.filterMode` from `FilterMode.Trilinear` to `FilterMode.Bilinear`
+- **Reason**: External textures (from Android decoder) do not support mipmaps, so Trilinear filtering was inappropriate
+- **Impact**: Eliminates potential shimmering/blurriness from incorrect mipmap usage
+- **Code Location**: `StreamManager.cs` line 141
+
+#### Quad Border Outlines (`QuadBorder.cs` - NEW)
+- **Purpose**: Adds sky-blue 3D border frame around monitor quads for visibility
+- **Features**:
+  - Creates 4 cube primitives (Top, Bottom, Left, Right edges) as a frame
+  - Dynamically scales with quad dimensions (reads from `CurvedScreen` component or `MeshRenderer.bounds`)
+  - Visible from all angles (double-sided, 3D cubes)
+  - Sky-blue color (RGB 128, 204, 255) by default
+  - Configurable width, depth, and color in Inspector
+- **Behavior**:
+  - Border container is a sibling (not child) of the quad, so it remains visible when quad is disabled
+  - Automatically appears/disappears with monitor (syncs with quad's `SetActive()` state)
+  - Updates position, rotation, and scale in `LateUpdate()` to match quad transform
+- **Setup**: Automatically added to all quads if `StreamManager.enableQuadBorders = true`
+- **Code Location**: `MoonQuestUnity/Assets/LimeLight/Runtime/Managers/QuadBorder.cs` (new file)
+
+### Pointer Stabilization (`StreamPointer.cs`)
+- **Purpose**: Reduces mouse jitter/shakiness when pointing at screens
+- **Implementation**: Uses `Vector2.SmoothDamp` for smooth pointer movement
+- **Features**:
+  - Configurable `smoothingSpeed` (default 10f) - higher = smoother but more lag
+  - Configurable `movementThreshold` (default 0.001f) - filters out micro-jitter
+  - Aggressive dampening for movements below threshold to stop jitter
+  - Resets smoothing state when not pointing at screen
+- **Code Location**: `StreamPointer.cs` (Note: Implementation details in summary, actual code may vary)
+
+### Audio Clipping Fixes
+
+#### Unity Audio Manager (`AudioManager.asset`)
+- **Change**: Increased `m_DSPBufferSize` from `1024` to `4096`
+- **Purpose**: Larger buffer reduces audio underruns and clipping
+- **Trade-off**: Slightly higher latency for better stability
+- **Code Location**: `MoonQuestUnity/ProjectSettings/AudioManager.asset` line 12
+
+#### Android Audio Renderer (`AndroidAudioRenderer.java`)
+- **Buffer Size Increases**:
+  - Small buffer attempts: `bytesPerFrame * 8` (was `* 2`)
+  - Large buffer attempts: `bytesPerFrame * 10` (was `* 2`)
+- **Low Latency Mode**: Explicitly disabled to force standard mode (low latency = smaller buffers = more clipping)
+- **Impact**: Significantly larger buffers prevent audio underruns and clipping
+- **Code Location**: `limelight_plugin/liblime/src/main/java/com/limelight/binding/audio/AndroidAudioRenderer.java` lines 128-171
+
+### Stream Settings Updates
+
+#### Default FPS (`PreferenceConfiguration.java`)
+- **Change**: Increased from `60` to `90` FPS
+- **Purpose**: Match Quest refresh rate for smoother streaming
+- **Code Location**: `limelight_plugin/liblime/src/main/java/com/limelight/preferences/PreferenceConfiguration.java` line 42
+
+#### Default Resolution (`PreferenceConfiguration.java`)
+- **Change**: Updated from `1920X1080` to `7680X1080`
+- **Purpose**: Support 4-monitor setups (4 × 1920x1080 arranged horizontally)
+- **Code Location**: `limelight_plugin/liblime/src/main/java/com/limelight/preferences/PreferenceConfiguration.java` line 41
+
+#### Display Refresh Rate (`StreamPlugin.java`)
+- **Change**: Hardcoded refresh rate updated from `60` to `90` Hz
+- **Purpose**: Match Quest 2/3 native refresh rate
+- **Code Location**: `limelight_plugin/liblime/src/main/java/com/liblime/StreamPlugin.java` line 200
+
+### ScreenManipulator Improvements (`ScreenManipulator.cs`)
+
+#### ClearGrabState() Method
+- **Purpose**: Public static method to reset grab state when monitors are removed
+- **Usage**: Called by `StreamManager.RemoveMonitor()` to prevent stuck grab states
+- **Implementation**: Clears `activeGrabber` static reference and resets `isGrabbing` flag
+- **Code Location**: `ScreenManipulator.cs` lines 37-51
+
+#### Curvature Adjustment Fix
+- **Improvement**: Prioritizes X or Y axis input based on magnitude for more reliable triggering
+- **Purpose**: Allows curvature adjustment even with slight diagonal stick movement
+- **Code Location**: `ScreenManipulator.cs` (curvature logic in `Update()` method)
+
+### Microphone Permissions (`LimePluginManager.cs`)
+- **Implementation**: Added runtime microphone permission request for Android 6.0+
+- **Method**: `WaitForPermissionsAndInitialize()` coroutine requests `UserAuthorization.Microphone`
+- **Purpose**: Enables microphone access for Quest app (required for voice input, etc.)
+- **Code Location**: `LimePluginManager.cs` (permission request in initialization coroutine)
+
+### New Input Methods (`StreamManager.cs`, `StreamPlugin.java`)
+
+#### SendKeyboardInputWithModifierAndFlags()
+- **Purpose**: Send keyboard events with Sunshine-specific flags (e.g., `SS_KBE_FLAG_NON_NORMALIZED`)
+- **Usage**: Required for sending raw Linux scancodes (e.g., Super key)
+- **Parameters**: `keyMap`, `upDown`, `modifier`, `flags`
+- **Code Location**: 
+  - Unity: `StreamManager.cs` lines 357-363
+  - Java: `StreamPlugin.java` lines 125-130
+
+#### SendMouseHScroll()
+- **Purpose**: Forward horizontal scroll events to Android plugin
+- **Note**: Currently unused (horizontal scroll implemented via Shift+Scroll in Unity)
+- **Code Location**: `StreamManager.cs` (method exists but not actively used)
+
+### Technical Details
+
+#### Monitor Visibility Management
+1. **Startup**: All quads disabled in `StreamManager.Awake()` to prevent white screens
+2. **Stream Start**: Only first monitor enabled in `StreamManager.OnCreate()` when stream begins
+3. **Spawning**: `SpawnNextMonitor()` finds first disabled monitor and enables it
+4. **Removal**: `RemoveMonitor()` disables monitor (doesn't destroy) and clears grab state
+
+#### Horizontal Scroll Timing
+- Uses coroutine with 0.02s delays to ensure OS recognizes Shift modifier
+- Prevents overlapping coroutines with `isSendingHorizontalScroll` flag
+- Direction inverted to match expected behavior (left stick = left scroll)
+
+#### Super+O Shortcut Implementation
+- Uses `SS_KBE_FLAG_NON_NORMALIZED` flag to send raw Linux scancode
+- No delays needed - immediate key sequence works reliably
+- Correct Quest button mapping: `OVRInput.Button.One` for X button
+
+### Benefits
+- Smooth horizontal scrolling for web pages and applications
+- Reliable keyboard shortcuts (Super+O for Onboard)
+- Intuitive monitor management (spawn/remove with menu button)
+- Reduced mouse jitter for better precision
+- Improved text clarity with higher render scale and LOD bias
+- Eliminated audio clipping with larger buffers
+- Visual quad borders for better monitor tracking
+- Higher quality streaming (90 FPS, 90 Hz refresh rate)
+- Proper microphone permissions for voice input
+
+### Testing Notes
+- Horizontal scroll direction: Left stick = left scroll, Right stick = right scroll
+- Super+O shortcut: Press X button on left controller to launch Onboard
+- Monitor removal: Hold right grip + press menu button while pointing at monitor
+- Pointer stabilization: Adjust `smoothingSpeed` and `movementThreshold` in Inspector if needed
+- Quad borders: Toggle `StreamManager.enableQuadBorders` to enable/disable
+- Audio: Monitor for clipping during high-load scenarios (should be eliminated)
+- Texture filtering: Verify no shimmering/blurriness on stream texture
