@@ -80,6 +80,13 @@ MoonQuest is a VR adaptation of Moonlight Android, porting its streaming and UI 
   - ❌ Test and validate on PC VR headsets (Index, Vive, Reverb, etc.).
   - Status: Currently Quest-only (uses OVRInput). PC VR support would enable streaming VR games from PC to PC VR headsets.
 
+- ❌ **Possible VR Runtime Integrations**:
+  - ❌ **Monado**: Open-source OpenXR runtime for Linux. Could enable native Linux VR support.
+  - ❌ **ALVR**: Open-source VR streaming solution. Could integrate ALVR's streaming capabilities or overlay system.
+  - ❌ **WiVRn**: Wireless VR streaming for Linux. Could leverage WiVRn's wireless streaming protocols.
+  - ❌ **WLXR Overlay**: VR overlay system. Could integrate overlay functionality for system-level VR overlays.
+  - Status: Research and evaluation phase. These could provide alternative streaming methods or overlay capabilities.
+
 ### Rendering Fixes
 - ✅ **Eye-Level Positioning**:
   - ✅ Fixed Quad positioning and visibility management.

@@ -31,6 +31,9 @@ Shader "Unlit/FillQuadShader"
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
+            
+            // Ensure anisotropic filtering is used (respects texture's anisoLevel setting)
+            // Unity's tex2D() automatically uses anisotropic filtering when available
 
             v2f vert (appdata v)
             {
@@ -44,7 +47,9 @@ Shader "Unlit/FillQuadShader"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                // Sample the texture using the full UV space
+                // Sample texture with anisotropic filtering support
+                // tex2D() automatically respects the texture's anisoLevel setting
+                // This ensures sharp text when viewing quads at angles
                 fixed4 col = tex2D(_MainTex, i.uv);
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return col;

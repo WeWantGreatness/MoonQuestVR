@@ -277,7 +277,7 @@ public class StreamPlugin extends UnityPluginObject implements SurfaceHolder.Cal
             }
         }
 
-        float displayRefreshRate = 90;
+        float displayRefreshRate = 72;
         LimeLog.info("Display refresh rate: " + displayRefreshRate);
 
         // If the user requested frame pacing using a capped FPS, we will need to change our

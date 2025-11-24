@@ -16,9 +16,12 @@ using PCP.LibLime;
 /// - Right Button B = Right Click  
 /// - Right Stick Click = Middle Click
 /// - Right Stick Movement = Scroll Wheel
+/// - Right Thumb Rest + Menu Button = Toggle UI (app list)
+/// - Right Grip + Menu Button = Remove monitor under pointer
+/// - Menu Button (alone) = Spawn monitor
 /// - Left Trigger = Left Click (alternative)
 /// - Left Button X = Launch Onboard (Super+O)
-/// - Menu Button = Spawn/Remove monitors
+/// - Left Thumb Rest = Available (capacitive touch sensor)
 /// </summary>
 public class InputManager : MonoBehaviour
 {
@@ -118,6 +121,11 @@ public class InputManager : MonoBehaviour
 
     void HandleLeftController()
     {
+        // 4.5. Thumb Rest (Left Controller) - Capacitive touch sensor
+        bool leftThumbRest = OVRInput.Get(OVRInput.RawTouch.LThumbRest);
+        // You can use this for any feature you want
+        // Example: if (leftThumbRest) { /* do something */ }
+        
         // 5. Left Click (Left Trigger) - Same as Right Trigger
         if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger))
         {
@@ -162,12 +170,19 @@ public class InputManager : MonoBehaviour
     {
         bool menuPressed = OVRInput.Get(OVRInput.Button.Start);
         bool rightGripHeld = OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch);
+        bool rightThumbRest = OVRInput.Get(OVRInput.RawTouch.RThumbRest);
         
         // On menu button press
         if (menuPressed && !wasMenuPressed)
         {
+            // If right thumb rest is held, toggle UI (app list)
+            if (rightThumbRest)
+            {
+                Debug.Log("InputManager: Thumb rest + Menu button - Toggling UI");
+                ToggleUI();
+            }
             // If right grip is held, remove monitor under pointer
-            if (rightGripHeld)
+            else if (rightGripHeld)
             {
                 // Raycast from controller to find monitor
                 if (rightHandAnchor != null)
@@ -189,6 +204,21 @@ public class InputManager : MonoBehaviour
         }
         
         wasMenuPressed = menuPressed;
+    }
+    
+    /// <summary>
+    /// Toggles the UI panel (app list canvas) visibility.
+    /// Opens if closed, closes if open.
+    /// </summary>
+    void ToggleUI()
+    {
+        if (LimePluginManager.Instance == null)
+        {
+            Debug.LogWarning("InputManager: LimePluginManager.Instance is null, cannot toggle UI");
+            return;
+        }
+        
+        LimePluginManager.Instance.ToggleUI();
     }
     
     

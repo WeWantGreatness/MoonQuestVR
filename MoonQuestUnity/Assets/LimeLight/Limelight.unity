@@ -6081,12 +6081,17 @@ PrefabInstance:
     - target: {fileID: 6204376366492245985, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6204376366492245985, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7204130856184679840, guid: 617b1dc351dd1ee8fafb3205447b66ea,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7310529675991328189, guid: 617b1dc351dd1ee8fafb3205447b66ea,
         type: 3}
@@ -6205,7 +6210,8 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 1737502499188048075, guid: 617b1dc351dd1ee8fafb3205447b66ea, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 607376395128741312, guid: 617b1dc351dd1ee8fafb3205447b66ea,
@@ -10002,7 +10008,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 60
+  field of view: 109.2
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -11710,7 +11716,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 60
+  field of view: 112.7
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -25261,7 +25267,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _monoscopic: 0
-  _sharpenType: 0
+  _sharpenType: 65536
   _enableDynamicResolution: 0
   minDynamicResolutionScale: 1
   maxDynamicResolutionScale: 1
@@ -25413,8 +25419,8 @@ Canvas:
   serializedVersion: 3
   m_RenderMode: 2
   m_Camera: {fileID: 0}
-  m_PlaneDistance: 100
-  m_PixelPerfect: 0
+  m_PlaneDistance: 1000
+  m_PixelPerfect: 1
   m_ReceivesEvents: 1
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
@@ -25664,7 +25670,7 @@ Camera:
     height: 1
   near clip plane: 0.1
   far clip plane: 1000
-  field of view: 117.7
+  field of view: 111.1
   orthographic: 0
   orthographic size: 5
   m_Depth: 0

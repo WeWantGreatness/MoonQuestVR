@@ -341,8 +341,48 @@ namespace PCP.LibLime
 		{
 			if (mPanelCanvas != null)
 			{
+				// Disable GraphicRaycaster FIRST to prevent ray interactor from detecting hidden UI
+				UnityEngine.UI.GraphicRaycaster raycaster = mPanelCanvas.GetComponent<UnityEngine.UI.GraphicRaycaster>();
+				if (raycaster != null)
+				{
+					raycaster.enabled = false;
+					Debug.Log(mTag + ": Disabled GraphicRaycaster");
+				}
+				
+				// Disable CanvasGroup interactable/raycastTarget if present
+				CanvasGroup canvasGroup = mPanelCanvas.GetComponent<CanvasGroup>();
+				if (canvasGroup != null)
+				{
+					canvasGroup.interactable = false;
+					canvasGroup.blocksRaycasts = false;
+					Debug.Log(mTag + ": Disabled CanvasGroup raycast");
+				}
+				
+				// Disable ALL colliders on canvas and all children (including inactive ones)
+				Collider[] allColliders = mPanelCanvas.GetComponentsInChildren<Collider>(true);
+				foreach (Collider col in allColliders)
+				{
+					col.enabled = false;
+				}
+				if (allColliders.Length > 0)
+				{
+					Debug.Log(mTag + ": Disabled " + allColliders.Length + " colliders");
+				}
+				
+				// Disable ALL Canvas components in children (in case there are nested canvases)
+				Canvas[] allCanvases = mPanelCanvas.GetComponentsInChildren<Canvas>(true);
+				foreach (Canvas canvas in allCanvases)
+				{
+					if (canvas != null && canvas.gameObject != mPanelCanvas)
+					{
+						canvas.enabled = false;
+					}
+				}
+				
+				// Finally, deactivate the entire GameObject and all children
 				mPanelCanvas.SetActive(false);
-				Debug.Log(mTag + ": UI hidden for streaming");
+				
+				Debug.Log(mTag + ": UI completely hidden (canvas, raycasters, colliders all disabled)");
 			}
 		}
 
@@ -350,9 +390,76 @@ namespace PCP.LibLime
 		{
 			if (mPanelCanvas != null)
 			{
+				// Activate the GameObject first
 				mPanelCanvas.SetActive(true);
-				Debug.Log(mTag + ": UI shown");
+				
+				// Re-enable ALL Canvas components in children
+				Canvas[] allCanvases = mPanelCanvas.GetComponentsInChildren<Canvas>(true);
+				foreach (Canvas canvas in allCanvases)
+				{
+					if (canvas != null)
+					{
+						canvas.enabled = true;
+					}
+				}
+				
+				// Re-enable ALL colliders on canvas and all children
+				Collider[] allColliders = mPanelCanvas.GetComponentsInChildren<Collider>(true);
+				foreach (Collider col in allColliders)
+				{
+					col.enabled = true;
+				}
+				
+				// Enable CanvasGroup interactable/raycastTarget if present
+				CanvasGroup canvasGroup = mPanelCanvas.GetComponent<CanvasGroup>();
+				if (canvasGroup != null)
+				{
+					canvasGroup.interactable = true;
+					canvasGroup.blocksRaycasts = true;
+				}
+				
+				// Enable GraphicRaycaster LAST to allow ray interactor to detect UI
+				UnityEngine.UI.GraphicRaycaster raycaster = mPanelCanvas.GetComponent<UnityEngine.UI.GraphicRaycaster>();
+				if (raycaster != null)
+				{
+					raycaster.enabled = true;
+				}
+				
+				Debug.Log(mTag + ": UI shown (canvas, raycasters, colliders all enabled)");
 			}
+		}
+		
+		/// <summary>
+		/// Toggles the UI panel visibility. Opens if closed, closes if open.
+		/// Also properly enables/disables raycast interaction.
+		/// </summary>
+		public void ToggleUI()
+		{
+			if (mPanelCanvas != null)
+			{
+				bool isCurrentlyActive = mPanelCanvas.activeSelf;
+				
+				if (isCurrentlyActive)
+				{
+					HideUI(); // Use HideUI to properly disable raycast
+				}
+				else
+				{
+					ShowUI(); // Use ShowUI to properly enable raycast
+				}
+			}
+			else
+			{
+				Debug.LogWarning(mTag + ": Cannot toggle UI - mPanelCanvas is null");
+			}
+		}
+		
+		/// <summary>
+		/// Checks if the UI panel is currently visible.
+		/// </summary>
+		public bool IsUIVisible()
+		{
+			return mPanelCanvas != null && mPanelCanvas.activeSelf;
 		}
 	}
 }
