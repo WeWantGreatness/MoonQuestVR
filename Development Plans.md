@@ -22,6 +22,7 @@ MoonQuest is a VR adaptation of Moonlight Android, porting its streaming and UI 
   - ✅ Convert VR ray hits to mouse coordinates and send via JNI as `MouseButtonPacket`.
   - ✅ Allow grabbing/clicking with controller triggers.
   - ✅ Pointer stabilization implemented (smoothing to reduce jitter).
+  - ❌ **Left Controller Mouse Control**: Add ability to use left controller for mouse input (mirroring right controller functionality).
 
 - ✅ **Keyboard Input**:
   - ✅ JNI methods implemented (`SendKeyboardInput`, `SendKeyboardInputWithModifier`, `SendKeyboardInputWithModifierAndFlags`).
@@ -71,6 +72,13 @@ MoonQuest is a VR adaptation of Moonlight Android, porting its streaming and UI 
   - ✅ Monitor spawning: Menu button click spawns next disabled monitor.
   - ✅ Monitor removal: Right grip held + Menu button click removes monitor under pointer.
   - ✅ Dynamic monitor management (enable/disable without destroying GameObjects).
+
+- ❌ **Whiteboard Feature**:
+  - ❌ VR whiteboard/drawing surface for annotations, notes, or collaborative work.
+  - ❌ Save whiteboard content automatically when closing the app.
+  - ❌ Load saved whiteboard state on app startup.
+  - ❌ Persist whiteboard data to local storage (JSON, image, or custom format).
+  - Status: Not yet implemented.
 
 ### Platform Support
 - ❌ **PC VR Support**:
@@ -158,5 +166,7 @@ MoonQuest is a VR adaptation of Moonlight Android, porting its streaming and UI 
 9. ❌ Add performance overlays.
 10. ❌ Add USB driver support for peripherals.
 11. ❌ Full UI port from Moonlight Android (polished app grid, settings screens).
+12. ❌ Add whiteboard feature with auto-save on app close.
+13. ❌ Add left controller mouse control support.
 
 This plan will be updated as features are implemented.
