@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using Unity.XR.Oculus;
 
 namespace PCP.LibLime
 {
@@ -40,7 +41,26 @@ namespace PCP.LibLime
 			mAppManger = GetComponent<AppManager>();
 			mInputManager = GetComponent<InputManager>();
 			OnJavaCallback += ChangeUIHandler;
+			DisableFoveatedRendering();
 			Debug.Log(mTag + ": Initialized");
+		}
+
+		private void DisableFoveatedRendering()
+		{
+#if UNITY_ANDROID && !UNITY_EDITOR
+			try
+			{
+				OVRManager.foveatedRenderingLevel = OVRManager.FoveatedRenderingLevel.Off;
+				OVRManager.eyeTrackedFoveatedRenderingEnabled = false;
+				OVRPlugin.useDynamicFoveatedRendering = false;
+				OVRPlugin.foveatedRenderingLevel = 0f;
+				Debug.Log(mTag + ": Foveated rendering disabled at startup");
+			}
+			catch (Exception ex)
+			{
+				Debug.LogWarning(mTag + ": Failed to disable foveated rendering - " + ex.Message);
+			}
+#endif
 		}
 
 		private void Start()

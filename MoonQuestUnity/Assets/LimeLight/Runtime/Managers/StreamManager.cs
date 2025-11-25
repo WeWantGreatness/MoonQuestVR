@@ -136,12 +136,12 @@ namespace PCP.LibLime
 			// Create new texture if it doesn't exist or was destroyed
 			if (mStreamTexture == null)
 			{
-				mStreamTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
-				{
-					filterMode = FilterMode.Bilinear,
-					anisoLevel = 16
-				};
-				// Mipmaps are disabled via the 'false' parameter in Texture2D constructor (mipChain = false)
+			mStreamTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
+			{
+				filterMode = FilterMode.Bilinear,
+				anisoLevel = 16
+			};
+				// Mipmaps are disabled via the 'false' parameter in Texture2D constructor (mipChain = false) - external textures don't support mipmaps
 				mLastTexWidth = width;
 				mLastTexHeight = height;
 				
