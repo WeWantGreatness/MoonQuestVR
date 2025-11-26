@@ -20,6 +20,13 @@ namespace PCP.LibLime
 		private int mLastTexWidth = 0; // Track last known resolution to detect changes
 		private int mLastTexHeight = 0;
 		private Texture2D mStreamTexture; // Reference to current stream texture
+
+		[Header("Stream Texture Filtering")]
+		[SerializeField]
+		private FilterMode mStreamFilterMode = FilterMode.Bilinear;
+
+		[SerializeField, Range(0, 16)]
+		private int mStreamAnisoLevel = 16;
 	private IntPtr mRawObject;
 
 	private void Awake()
@@ -136,11 +143,11 @@ namespace PCP.LibLime
 			// Create new texture if it doesn't exist or was destroyed
 			if (mStreamTexture == null)
 			{
-			mStreamTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
-			{
-				filterMode = FilterMode.Bilinear,
-				anisoLevel = 16
-			};
+				mStreamTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
+				{
+					filterMode = mStreamFilterMode,
+					anisoLevel = mStreamAnisoLevel
+				};
 				// Mipmaps are disabled via the 'false' parameter in Texture2D constructor (mipChain = false) - external textures don't support mipmaps
 				mLastTexWidth = width;
 				mLastTexHeight = height;
@@ -296,6 +303,32 @@ namespace PCP.LibLime
 				MessageManager.Instance.Error("UpdateFrame failed:" + e.Message);
 				enabled = false;
 			}
+		}
+
+		private void OnValidate()
+		{
+			mStreamAnisoLevel = Mathf.Clamp(mStreamAnisoLevel, 0, 16);
+			ApplyTextureFilteringSettings();
+		}
+
+		private void ApplyTextureFilteringSettings()
+		{
+			if (mStreamTexture == null)
+			{
+				return;
+			}
+
+			mStreamTexture.filterMode = mStreamFilterMode;
+			mStreamTexture.anisoLevel = mStreamAnisoLevel;
+			mStreamTexture.Apply(false, false);
+			Debug.Log(mTag + ": Updated stream texture filtering - mode: " + mStreamFilterMode + ", aniso: " + mStreamAnisoLevel);
+		}
+
+		public void SetTextureFiltering(FilterMode filterMode, int anisoLevel)
+		{
+			mStreamFilterMode = filterMode;
+			mStreamAnisoLevel = Mathf.Clamp(anisoLevel, 0, 16);
+			ApplyTextureFilteringSettings();
 		}
 		
 		private void SaveLastApp()

@@ -45,6 +45,13 @@ MoonQuest is a VR adaptation of Moonlight Android, porting its streaming and UI 
   - ❌ Port Moonlight Android's `ControllerHandler.java` via JNI for standard gamepad input.
   - Status: Not yet implemented.
 
+- ❌ **Palm/Hand Control**:
+  - ❌ Use hand tracking (Quest hand tracking) to control mouse input similar to controllers.
+  - ❌ Map hand gestures to mouse buttons (pinch = click, point = hover, etc.).
+  - ❌ Implement hand-based mouse control that mirrors controller functionality.
+  - ❌ Support for both hands (left/right hand mouse control).
+  - Status: Research phase - need to determine how to map hand tracking to mouse input and button actions.
+
 ### VR Interaction Features
 - ✅ **Screen Manipulation**:
   - ✅ Grab and move the Quad (stream display) in 3D space using VR controllers (`ScreenManipulator.cs`).
@@ -168,5 +175,6 @@ MoonQuest is a VR adaptation of Moonlight Android, porting its streaming and UI 
 11. ❌ Full UI port from Moonlight Android (polished app grid, settings screens).
 12. ❌ Add whiteboard feature with auto-save on app close.
 13. ❌ Add left controller mouse control support.
+14. ❌ Add palm/hand control for mouse input (use hands like controllers with gesture mapping).
 
 This plan will be updated as features are implemented.

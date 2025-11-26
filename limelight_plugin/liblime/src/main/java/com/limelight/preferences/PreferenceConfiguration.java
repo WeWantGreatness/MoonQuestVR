@@ -39,7 +39,7 @@ public class PreferenceConfiguration {
     private static final String REDUCE_REFRESH_RATE_PREF_STRING = "checkbox_reduce_refresh_rate";
     private static final String FULL_RANGE_PREF_STRING = "checkbox_full_range";
     static final String DEFAULT_RESOLUTION = "7680X1080";
-    static final String DEFAULT_FPS = "72";
+    static final String DEFAULT_FPS = "90";
     private static final boolean DEFAULT_STRETCH = false;
     private static final boolean DEFAULT_SOPS = false;
     private static final boolean DEFAULT_DISABLE_TOASTS = false;
