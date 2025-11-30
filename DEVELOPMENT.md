@@ -234,8 +234,24 @@ Major improvements to input handling, visual quality, audio stability, and user 
   - `SpawnNextMonitor()`: Finds first disabled monitor in `quadRenderers` list and enables it
   - `RemoveMonitor()`: Calls `ScreenManipulator.ClearGrabState()` then disables the monitor (doesn't destroy)
   - Uses raycast from right controller to detect which monitor to remove
+  - `GetMonitorUnderPointer()`: Raycasts from controller to find which monitor quad is being pointed at
 - **Startup Behavior**: All quads disabled in `Awake()`, only first monitor enabled in `OnCreate()` when stream starts
-- **Code Location**: `InputManager.cs` lines 152-192, `StreamManager.cs` lines 25-99, 390-450
+- **Code Location**: `InputManager.cs` lines 152-207, `StreamManager.cs` lines 25-99, 390-450, 481-494
+
+#### UI Toggle (`InputManager.cs`, `LimePluginManager.cs`)
+- **Purpose**: Toggle the app list UI panel visibility after it hides on stream start
+- **Trigger**: Right thumb rest held + Menu button press
+- **Implementation**:
+  - `ToggleUI()` in `LimePluginManager`: Toggles `mPanelCanvas` visibility and properly enables/disables raycast interaction
+  - `ShowUI()` / `HideUI()`: Properly enable/disable UI with raycast handling
+  - `IsUIVisible()`: Check if UI panel is currently visible
+- **Behavior**:
+  - Opens UI if closed, closes if open
+  - Properly manages `GraphicRaycaster` component for interaction
+  - UI hides automatically when stream starts, can be toggled back with thumb rest + menu
+- **Code Location**: 
+  - `InputManager.cs` lines 178-182, 209-222
+  - `LimePluginManager.cs` lines 555-582
 
 ### Visual Quality Improvements
 
@@ -381,7 +397,185 @@ Major improvements to input handling, visual quality, audio stability, and user 
 - Horizontal scroll direction: Left stick = left scroll, Right stick = right scroll
 - Super+O shortcut: Press X button on left controller to launch Onboard
 - Monitor removal: Hold right grip + press menu button while pointing at monitor
+- UI toggle: Hold right thumb rest + press menu button to toggle app list UI
 - Pointer stabilization: Adjust `smoothingSpeed` and `movementThreshold` in Inspector if needed
 - Quad borders: Toggle `StreamManager.enableQuadBorders` to enable/disable
 - Audio: Monitor for clipping during high-load scenarios (should be eliminated)
 - Texture filtering: Verify no shimmering/blurriness on stream texture
+
+## Foveation Control, Monitor Configuration, and Rendering Optimizations (November 2025)
+
+### Overview
+Major improvements to foveation control, monitor configuration flexibility, shader enhancements, and rendering pipeline optimizations. Replaced hardcoded monitor settings with Inspector-exposed configuration, improved foveation disable approach, and added new rendering controls.
+
+### Foveation Control Improvements (`LimePluginManager.cs`)
+
+#### OpenXR Reflection-Based Foveation Disable
+- **Previous Approach**: Direct `OVRManager`/`OVRPlugin` calls for disabling foveated rendering
+- **New Approach**: Reflection-based access to `MetaFoveationFeature` via OpenXR to avoid compile-time errors
+- **Benefits**: 
+  - More robust - works even if Meta OpenXR package isn't fully available at compile time
+  - Avoids dependency issues with missing packages
+  - Uses reflection to dynamically access OpenXR features at runtime
+- **Implementation**:
+  - Uses `OpenXRSettings.Instance` to access OpenXR features
+  - Dynamically loads `MetaFoveationFeature` type via reflection
+  - Sets `foveationLevel` property to `Off` enum value
+  - Disables `refreshRateChanged` auto-adjustments
+- **Timing**: Moved foveation disable from `Awake()` to `Start()` for better initialization timing
+- **Code Location**: `LimePluginManager.cs` lines 56-103
+
+#### Eye Render Resolution Control Methods
+- **New Method**: `SetEyeRenderResolutionScale(float scale)`
+  - Sets VR eye render resolution using scale multipliers (1.0 = native, 1.5 = 1.5x native, etc.)
+  - Uses `XRSettings.eyeTextureResolutionScale`
+  - Purpose: Allow dynamic adjustment of VR rendering resolution
+- **New Method**: `SetEyeRenderResolutionAbsolute(int targetWidthPerEye)`
+  - Attempts to set eye resolution based on target pixel width per eye
+  - Calculates scale automatically based on headset native resolution (uses `XRSettings.eyeTextureWidth`)
+  - Supports Quest 2 (1832x1920), Quest 3 (2064x2208), Quest Pro (1800x1920)
+  - Falls back to estimated scale if native resolution cannot be determined
+  - Note: Only takes width parameter; calculates scale based on width and applies uniformly
+- **Code Location**: `LimePluginManager.cs` lines 105-163
+
+### Monitor Configuration Improvements (`StreamManager.cs`)
+
+#### Inspector-Exposed Configuration (No More Hardcoding)
+- **Removed**: Hardcoded monitor configuration values
+- **Added**: Inspector-editable fields for complete monitor setup flexibility:
+  - `monitorWidth` (default: 1920f) - Width of each individual monitor in pixels
+  - `monitorHeight` (default: 1200f) - Height of each individual monitor in pixels (updated from 1080)
+  - `desktopXOffsets[]` (default: {0, 1920, 3840, 5760}) - X position offsets for each monitor in desktop space
+  - `desktopYOffset` (default: 0f) - Y position offset for all monitors
+  - `textureVerticalOffset` (new) - Fine-tuning control to shift texture up/down on the quad in pixels
+- **Benefits**:
+  - No code changes needed to adjust monitor configuration
+  - Easy setup for different monitor arrangements
+  - Can be adjusted per-project without rebuilding code
+- **Impact**: Monitor height updated from 1080 to 1200 pixels for better aspect ratio
+- **Code Location**: `StreamManager.cs` lines 12-32, 199-241
+
+#### Texture Configuration Updates
+- **Mipmaps**: Enabled on stream texture (`mipChain = true`)
+  - Changed from disabled to enabled for better texture filtering at distance
+  - Note: External textures from Limelight plugin may have limitations with Unity mipmap generation
+- **UV Setup**: Now uses Inspector-configured values instead of hardcoded arrays
+- **Vertical Alignment**: Added `textureVerticalOffset` for fine-tuning texture vertical position on quads
+  - Positive = shift down (fills bottom gap)
+  - Negative = shift up (fills top gap)
+- **Error Handling**: Better validation for missing X offset configurations
+- **Code Location**: `StreamManager.cs` lines 164-172, 199-241
+
+#### Inspector-Exposed Stream Texture Filtering (`StreamManager.cs`)
+- **Filter Mode**: Exposed to Inspector as `mStreamFilterMode` (default: `FilterMode.Bilinear`)
+  - Can be adjusted in Unity Inspector: Bilinear, Point, Trilinear
+  - Applied when creating/updating stream texture
+- **Anisotropic Level**: Exposed to Inspector as `mStreamAnisoLevel` (default: 16, range: 0-16)
+  - Controls anisotropic texture filtering quality
+  - Higher values = better quality when viewing quads at angles
+  - Can be adjusted in Unity Inspector for performance/quality trade-off
+- **Benefits**: Easy adjustment of texture filtering without code changes
+- **Code Location**: `StreamManager.cs` lines 45-50, applied in texture creation logic
+
+### Shader Improvements (`FillQuadSHader.shader`)
+
+#### Alpha-to-Coverage Enabled
+- **Added**: `AlphaToMask On` directive in shader Pass
+- **Purpose**: Uses MSAA (Multi-Sample Anti-Aliasing) to smooth alpha edges
+- **Effectiveness**: Most beneficial when MSAA is enabled and texture uses alpha channel
+- **Benefits**: Smoother text rendering and better alpha edge quality
+- **Code Location**: `FillQuadSHader.shader` line 11
+
+### Input Manager Fixes (`InputManager.cs`)
+
+#### Monitor Spawning Logic Correction
+- **Issue**: Monitor spawning was not working correctly when menu button was pressed alone
+- **Fix**: Corrected `else` block structure in menu button handling
+  - Monitor spawning now correctly triggers when menu button is pressed without thumb rest or grip held
+  - Fixed indentation and block structure
+- **Impact**: Menu button alone now properly spawns monitors as intended
+- **Code Location**: `InputManager.cs` lines 171-201
+
+### Render Pipeline Settings Updates
+
+#### URP High Fidelity Settings (`URP-HighFidelity.asset`, `URP-HighFidelity-Renderer.asset`)
+- Updated Universal Render Pipeline quality settings
+- Adjustments to rendering quality and performance balance
+- Code Location: `MoonQuestUnity/Assets/Settings/URP-HighFidelity*.asset`
+
+#### Project and Quality Settings
+- **ProjectSettings.asset**: Minor configuration adjustments
+- **QualitySettings.asset**: Quality level settings updates
+- Code Location: `MoonQuestUnity/ProjectSettings/*.asset`
+
+### Material Updates (`QuadMaterial.mat`)
+
+#### Material Property Changes
+- Updated material properties for better rendering
+- May include texture filtering, shader properties, or other rendering settings
+- Code Location: `MoonQuestUnity/Assets/QuadMaterial.mat`
+
+### Scene Configuration (`Limelight.unity`)
+
+#### Extensive Scene Updates
+- **Scope**: 1,761 lines changed in scene file
+- **Likely Includes**:
+  - Component property updates
+  - Camera configurations
+  - Render pipeline settings
+  - OVRManager configurations
+  - Component references and serialization data
+- **Impact**: Significant scene structure and configuration changes
+- **Note**: Requires review in Unity Editor to see exact changes
+- **Code Location**: `MoonQuestUnity/Assets/LimeLight/Limelight.unity`
+
+### Android Plugin Updates
+
+#### Java Source Files
+- **PluginManager.java**: Minor configuration adjustments (4 lines changed)
+- **PreferenceConfiguration.java**: Preference defaults updates (2 lines changed)
+- **AAR Rebuild**: `liblime-release.aar` rebuilt with updated Java code
+  - Binary size: 1862631 → 1862630 bytes (minor changes)
+- **Code Location**: `limelight_plugin/liblime/src/main/java/com/liblime/*.java`
+
+### File Cleanup
+
+#### Removed Files
+- **RuntimeActionBindings.json**: Removed from StreamingAssets (no longer needed)
+- **RuntimeActionBindings.json.meta**: Removed Unity meta file
+- **Purpose**: Cleanup of unused configuration files
+
+### Technical Details
+
+#### Foveation Control Flow
+1. **Startup**: `DisableFoveatedRendering()` called in `Start()` method
+2. **OpenXR Check**: Validates `OpenXRSettings.Instance` is available
+3. **Reflection**: Dynamically loads `MetaFoveationFeature` type
+4. **Feature Access**: Uses `GetFeature<T>()` method to retrieve feature instance
+5. **Disable**: Sets `foveationLevel` to `Off` and disables auto-adjustments
+6. **Fallback**: Logs warning if feature not found (non-critical)
+
+#### Monitor Configuration Flow
+1. **Inspector Setup**: User configures monitor settings in Unity Inspector
+2. **Runtime Loading**: `StreamManager` reads Inspector-configured values
+3. **UV Calculation**: Each monitor's UV rect calculated from `desktopXOffsets` and `monitorWidth`/`monitorHeight`
+4. **Texture Application**: UV offset and scale applied to quad material for proper cropping
+5. **Fine-Tuning**: `textureVerticalOffset` allows pixel-level vertical alignment adjustments
+
+### Benefits
+- More robust foveation control using OpenXR reflection
+- Flexible monitor configuration without code changes
+- Better texture filtering with mipmaps enabled
+- Smoother alpha rendering with alpha-to-coverage
+- Fixed monitor spawning functionality
+- Higher monitor resolution (1200 vs 1080) for better aspect ratio
+- Easy fine-tuning of texture alignment
+- New eye resolution control methods for VR optimization
+
+### Testing Notes
+- **Foveation**: Verify foveated rendering is disabled (may require ADB commands if code approach doesn't work due to Unity/Meta bugs)
+- **Monitor Configuration**: Test different monitor arrangements by adjusting Inspector values
+- **Texture Alignment**: Use `textureVerticalOffset` to fine-tune if monitors show black strips at top/bottom
+- **Mipmaps**: Monitor for any texture corruption (external textures may not fully support Unity mipmap generation)
+- **Eye Resolution**: Test `SetEyeRenderResolutionScale()` and `SetEyeRenderResolutionAbsolute()` methods for VR quality tuning
+- **Monitor Spawning**: Verify menu button alone now correctly spawns monitors
