@@ -10,6 +10,27 @@ namespace PCP.LibLime
 		[Tooltip("Drag your 4 manually created quads with MeshRenderer here. Order: DP-2, HDMI-0, DP-0, DP-4")]
 		public List<MeshRenderer> quadRenderers = new List<MeshRenderer>();
 		
+		[Header("Monitor Configuration")]
+		[Tooltip("Width of each individual monitor in pixels (e.g., 1920)")]
+		[SerializeField]
+		private float monitorWidth = 1920f;
+		
+		[Tooltip("Height of each individual monitor in pixels (e.g., 1200)")]
+		[SerializeField]
+		private float monitorHeight = 1200f;
+		
+		[Tooltip("X position offsets for each monitor in desktop space (order must match quadRenderers). Example: 0, 1920, 3840, 5760 for 4 monitors")]
+		[SerializeField]
+		private float[] desktopXOffsets = { 0f, 1920f, 3840f, 5760f };
+		
+		[Tooltip("Y position offset for all monitors (usually 0 for top-aligned monitors)")]
+		[SerializeField]
+		private float desktopYOffset = 0f;
+		
+		[Tooltip("Vertical offset to shift texture up/down on the quad in pixels. Positive = shift down (to fill bottom gap), Negative = shift up (to fill top gap). Use this to fine-tune texture alignment on the quad.")]
+		[SerializeField]
+		private float textureVerticalOffset = 0f;
+		
 		[Header("Quad Borders")]
 		[Tooltip("Automatically add sky blue borders around all monitor quads for visibility")]
 		public bool enableQuadBorders = true;
@@ -143,12 +164,12 @@ namespace PCP.LibLime
 			// Create new texture if it doesn't exist or was destroyed
 			if (mStreamTexture == null)
 			{
-				mStreamTexture = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
+				mStreamTexture = new Texture2D(width, height, TextureFormat.RGBA32, true, true)
 				{
 					filterMode = mStreamFilterMode,
 					anisoLevel = mStreamAnisoLevel
 				};
-				// Mipmaps are disabled via the 'false' parameter in Texture2D constructor (mipChain = false) - external textures don't support mipmaps
+				// Mipmaps are enabled via the 'true' parameter in Texture2D constructor (mipChain = true)
 				mLastTexWidth = width;
 				mLastTexHeight = height;
 				
@@ -178,31 +199,39 @@ namespace PCP.LibLime
 		{
 			if (quadRenderers == null || quadRenderers.Count == 0 || mStreamTexture == null) return;
 			
-			// Hardcoded for 4 monitors: DP-2, HDMI-0, DP-0, DP-4
-			// Based on xrandr: DP-2 at 0, HDMI-0 at 1920, DP-0 at 3840, DP-4 at 5760
-			float[] desktopXOffsets = { 0f, 1920f, 3840f, 5760f };
-			float monitorWidth = 1920f;
-			float monitorHeight = 1080f;
+			// Use Inspector-configured values (no hardcoding!)
+			// These can be adjusted in Unity Inspector for any monitor configuration
 			
-			for (int i = 0; i < quadRenderers.Count && i < 4; i++)
+			for (int i = 0; i < quadRenderers.Count; i++)
 			{
 				var quad = quadRenderers[i];
 				// Only set up monitors that are active (enabled)
 				if (quad == null || !quad.gameObject.activeSelf || quad.material == null) continue;
+				
+				// Check if we have X offset configured for this monitor
+				if (desktopXOffsets == null || i >= desktopXOffsets.Length)
+				{
+					Debug.LogWarning(mTag + ": Quad " + i + " (" + quad.gameObject.name + ") - No desktopXOffset configured! Skipping UV setup.");
+					continue;
+				}
 				
 				// Assign the shared texture to the quad's material
 				quad.material.mainTexture = mStreamTexture;
 				
 				// Calculate UV Rect (x, y, width, height in 0-1 space) for texture offset
 				// Width: how much of the texture this monitor uses
-				float uvWidth = monitorWidth / mTexWidth;  // 1920 / 7680 = 0.25
-				float uvHeight = monitorHeight / mTexHeight; // 1080 / 1080 = 1.0
+				float uvWidth = monitorWidth / mTexWidth;
+				float uvHeight = monitorHeight / mTexHeight;
 				
 				// X offset: where this monitor starts horizontally
 				float uvX = desktopXOffsets[i] / mTexWidth;
 				
-				// Y offset: All monitors are at desktopY=0 (top of desktop)
-				float uvY = 0f;
+				// Y offset: Configured in Inspector (usually 0 for top-aligned monitors)
+				// Add textureVerticalOffset to shift texture up/down on the quad
+				// Positive offset = shift texture down (shows lower part, fills bottom gap)
+				// Negative offset = shift texture up (shows upper part, fills top gap)
+				float pixelYOffset = desktopYOffset + textureVerticalOffset;
+				float uvY = pixelYOffset / mTexHeight;
 				
 				// Create UV offset using material property (tiling and offset)
 				// UV offset = (uvX, uvY), UV scale = (uvWidth, uvHeight)

@@ -26,14 +26,14 @@ public class StreamPointer : MonoBehaviour
     public GameObject cursorVisual;       // Drag a small Sphere GameObject here (optional)
     
     [Header("Monitor Configuration")]
-    [Tooltip("Total width of the ENTIRE desktop being streamed (e.g., 7680 for 4x 1080p)")]
+    [Tooltip("Total width of the ENTIRE desktop being streamed (e.g., 7680 for 4x 1920x1200)")]
     public float totalStreamWidth = 7680f;
-    [Tooltip("Total height of the ENTIRE desktop being streamed (e.g., 1080)")]
-    public float totalStreamHeight = 1080f;
+    [Tooltip("Total height of the ENTIRE desktop being streamed (e.g., 1200)")]
+    public float totalStreamHeight = 1200f;
     [Tooltip("Width of THIS specific monitor (e.g., 1920)")]
     public float thisMonitorWidth = 1920f;
-    [Tooltip("Height of THIS specific monitor (e.g., 1080)")]
-    public float thisMonitorHeight = 1080f;
+    [Tooltip("Height of THIS specific monitor (e.g., 1200)")]
+    public float thisMonitorHeight = 1200f;
     [Tooltip("X Position where this monitor starts (e.g., 0 for Left, 1920 for Right)")]
     public float thisMonitorXOffset = 0f;
     [Tooltip("Y Position where this monitor starts (e.g., 0 for Bottom, 1080 for Top)")]

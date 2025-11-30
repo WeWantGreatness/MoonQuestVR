@@ -11,6 +11,10 @@ Shader "Unlit/FillQuadShader"
 
         Pass
         {
+            // Enable alpha-to-coverage (uses MSAA to smooth alpha edges)
+            // Note: This is most effective when MSAA is enabled and the texture uses alpha.
+            AlphaToMask On
+
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag

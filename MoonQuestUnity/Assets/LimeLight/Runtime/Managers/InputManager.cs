@@ -171,10 +171,10 @@ public class InputManager : MonoBehaviour
         bool menuPressed = OVRInput.Get(OVRInput.Button.Start);
         bool rightGripHeld = OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, OVRInput.Controller.RTouch);
         bool rightThumbRest = OVRInput.Get(OVRInput.RawTouch.RThumbRest);
-        
+            
         // On menu button press
         if (menuPressed && !wasMenuPressed)
-        {
+            {
             // If right thumb rest is held, toggle UI (app list)
             if (rightThumbRest)
             {
@@ -193,11 +193,11 @@ public class InputManager : MonoBehaviour
                     if (monitorToRemove != null)
                     {
                         streamManager.RemoveMonitor(monitorToRemove);
-                    }
                 }
             }
-            else
-            {
+        }
+        else
+        {
                 // Otherwise, spawn a monitor
                 streamManager.SpawnNextMonitor();
             }
