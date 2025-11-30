@@ -1,0 +1,1 @@
+/home/wewantgreatness/Unity/MoonQuestUnity/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/3d2k234e/obj/arm64-v8a

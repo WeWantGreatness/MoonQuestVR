@@ -1,0 +1,14 @@
+# ninja log v5
+86	159	1764450627034561989	/home/wewantgreatness/Unity/MoonQuestUnity/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/3d2k234e/obj/arm64-v8a/libswappywrapper.so	1e2c1eef2eba173e
+1	86	1764450626969561203	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	1ef206d6d66ab434
+3	1392	1764454070798994878	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	182c779d6a0de2ab
+6	1465	1764454070846296827	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	a3e423e18d3e5908
+1407	1575	1764454070979208625	FramePacing/CMakeFiles/swappywrapper.dir/UnitySwappyWrapper.cpp.o	1ef206d6d66ab434
+2	1664	1764454071070752784	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	abe4acdf61ede6c7
+1575	1672	1764454071072262755	/home/wewantgreatness/Unity/MoonQuestUnity/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/3d2k234e/obj/arm64-v8a/libswappywrapper.so	1e2c1eef2eba173e
+9	1686	1764454071090558008	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	db058cfa5b14e454
+2	1958	1764454071363036610	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	e5052fa35c31b596
+6	1983	1764454071375855969	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	12307755342f85ce
+9	1985	1764454071379962837	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	9d69612c01712c5
+1	2220	1764454071623263083	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	e5127728d9d4249d
+2220	2250	1764454071662320392	/home/wewantgreatness/Unity/MoonQuestUnity/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/3d2k234e/obj/arm64-v8a/libgame.so	e8c82cb3201a3f3f

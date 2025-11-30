@@ -1,0 +1,8 @@
+/home/wewantgreatness/Unity/MoonQuestUnity/.utmp/RelWithDebInfo/3d2k234e/arm64-v8a/CMakeFiles/edit_cache.dir
+/home/wewantgreatness/Unity/MoonQuestUnity/.utmp/RelWithDebInfo/3d2k234e/arm64-v8a/CMakeFiles/rebuild_cache.dir
+/home/wewantgreatness/Unity/MoonQuestUnity/.utmp/RelWithDebInfo/3d2k234e/arm64-v8a/GameActivity/CMakeFiles/game.dir
+/home/wewantgreatness/Unity/MoonQuestUnity/.utmp/RelWithDebInfo/3d2k234e/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
+/home/wewantgreatness/Unity/MoonQuestUnity/.utmp/RelWithDebInfo/3d2k234e/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir
+/home/wewantgreatness/Unity/MoonQuestUnity/.utmp/RelWithDebInfo/3d2k234e/arm64-v8a/FramePacing/CMakeFiles/swappywrapper.dir
+/home/wewantgreatness/Unity/MoonQuestUnity/.utmp/RelWithDebInfo/3d2k234e/arm64-v8a/FramePacing/CMakeFiles/edit_cache.dir
+/home/wewantgreatness/Unity/MoonQuestUnity/.utmp/RelWithDebInfo/3d2k234e/arm64-v8a/FramePacing/CMakeFiles/rebuild_cache.dir

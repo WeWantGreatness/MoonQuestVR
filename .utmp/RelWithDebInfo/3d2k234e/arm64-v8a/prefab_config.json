@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "prefabPath": "/home/wewantgreatness/.gradle/caches/modules-2/files-2.1/com.google.prefab/cli/2.1.0/aa32fec809c44fa531f01dcfb739b5b3304d3050/cli-2.1.0-all.jar",
+  "packages": [
+    "/home/wewantgreatness/.gradle/caches/8.13/transforms/8e589658a3c4c7c1202d3b5dd9ebfcd2/transformed/jetified-games-activity-3.0.5/prefab",
+    "/home/wewantgreatness/.gradle/caches/8.13/transforms/2d0dff526b5037728ef71c5a0bb8e7f7/transformed/jetified-games-frame-pacing-2.1.2/prefab"
+  ]
+}
